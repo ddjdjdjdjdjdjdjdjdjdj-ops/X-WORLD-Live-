@@ -1,1 +1,73 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>X-WORLD Live-</title>
+    <style>
+        body { background: #000; color: #fff; font-family: sans-serif; margin: 0; padding: 10px; }
+        header { text-align: center; padding: 20px; border-bottom: 1px solid #333; }
+        h1 { color: red; margin: 0; }
+        #videoList { max-width: 600px; margin: 20px auto; }
+        .video-card { background: #111; border: 1px solid #333; border-radius: 10px; margin-bottom: 20px; overflow: hidden; }
+        video { width: 100%; display: block; background: #000; }
+        .title { padding: 15px; font-size: 18px; font-weight: bold; border-top: 1px solid #222; }
+        .no-data { text-align: center; color: #666; margin-top: 50px; }
+    </style>
+</head>
+<body>
+
+<header><h1>X-WORLD Live-</h1></header>
+
+<div id="videoList">
+    <div class="no-data" id="status">ভিডিও খোঁজা হচ্ছে...</div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyBWhYvIKGHfDO4NrH0G5N692FljzD_wmZc",
+        authDomain: "misti-am.firebaseapp.com",
+        projectId: "misti-am",
+        storageBucket: "misti-am.firebasestorage.app",
+        messagingSenderId: "335857181187",
+        appId: "1:335857181187:web:eee24712600f7018262436"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const videoList = document.getElementById('videoList');
+    const status = document.getElementById('status');
+
+    // ডাটাবেস থেকে রিয়েল-টাইম ভিডিও লিস্ট আনা
+    const q = query(collection(db, "userVideos"), orderBy("createdAt", "desc"));
+
+    onSnapshot(q, (snapshot) => {
+        if (snapshot.empty) {
+            status.innerText = "এখনো কোনো ভিডিও আপলোড করা হয়নি।";
+            return;
+        }
+
+        videoList.innerHTML = ""; // আগের লেখা পরিষ্কার করা
+        snapshot.forEach((doc) => {
+            const data = doc.data();
+            const div = document.createElement('div');
+            div.className = 'video-card';
+            div.innerHTML = `
+                <video controls>
+                    <source src="${data.url}" type="video/mp4">
+                    আপনার ব্রাউজার ভিডিও সাপোর্ট করে না।
+                </video>
+                <div class="title">${data.title}</div>
+            `;
+            videoList.appendChild(div);
+        });
+    }, (error) => {
+        status.innerText = "Error: " + error.message;
+    });
+</script>
+</body>
+</html>
 
