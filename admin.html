@@ -3,31 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>X-WORLD Admin Panel</title>
+    <title>X-WORLD Admin (Drive Support)</title>
     <style>
-        body { font-family: Arial, sans-serif; background: #f4f4f4; text-align: center; padding: 20px; }
-        .container { background: #fff; padding: 20px; border-radius: 10px; max-width: 400px; margin: auto; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        input { width: 90%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; }
-        button { background: #28a745; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; }
-        #status { margin-top: 15px; color: blue; }
+        body { font-family: sans-serif; background: #121212; color: white; text-align: center; padding: 50px 20px; }
+        .box { background: #1e1e1e; padding: 30px; border-radius: 15px; max-width: 450px; margin: auto; border: 1px solid #333; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #444; background: #222; color: white; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: #ff0000; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        #msg { margin-top: 15px; font-size: 14px; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>X-WORLD Upload</h2>
-    <input type="text" id="title" placeholder="Video Title">
-    <input type="file" id="videoFile" accept="video/*">
-    <button onclick="uploadVideo()">Upload Now</button>
-    <div id="status"></div>
+<div class="box">
+    <h2>Admin Panel</h2>
+    <input type="text" id="title" placeholder="ভিডিওর টাইটেল লিখুন">
+    <input type="text" id="rawLink" placeholder="গুগল ড্রাইভের শেয়ার লিঙ্ক পেস্ট করুন">
+    <button onclick="uploadToFirebase()">সবুজ সংকেত দিন (Save)</button>
+    <div id="msg"></div>
 </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-    import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
-    // আপনার ফায়ারবেস কনফিগ
     const firebaseConfig = {
         apiKey: "AIzaSyBWhYvIKGHfDO4NrH0G5N692FljzD_wmZc",
         authDomain: "misti-am.firebaseapp.com",
@@ -39,45 +37,49 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
-    const storage = getStorage(app);
 
-    window.uploadVideo = async function() {
+    window.uploadToFirebase = async function() {
         const title = document.getElementById('title').value;
-        const file = document.getElementById('videoFile').files[0];
-        const status = document.getElementById('status');
+        const rawLink = document.getElementById('rawLink').value;
+        const msg = document.getElementById('msg');
 
-        if (!title || !file) {
-            alert("Please provide both title and video!");
+        if(!title || !rawLink) return alert("আগে টাইটেল আর লিঙ্ক দিন!");
+
+        // ড্রাইভ লিঙ্ক কনভার্ট করার লজিক
+        let videoID = "";
+        if(rawLink.includes("file/d/")) {
+            videoID = rawLink.split("file/d/")[1].split("/")[0];
+        } else if(rawLink.includes("id=")) {
+            videoID = rawLink.split("id=")[1].split("&")[0];
+        }
+
+        if(!videoID) {
+            msg.style.color = "red";
+            msg.innerText = "ভুল লিঙ্ক! ড্রাইভের শেয়ার লিঙ্ক দিন।";
             return;
         }
 
-        status.innerText = "Uploading to Storage...";
-        const storageRef = ref(storage, 'videos/' + file.name);
-        const uploadTask = uploadBytesResumable(storageRef, file);
+        const directLink = `https://drive.google.com/uc?export=download&id=${videoID}`;
 
-        uploadTask.on('state_changed', 
-            (snapshot) => {
-                const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                status.innerText = "Uploading: " + Math.round(progress) + "%";
-            }, 
-            (error) => { alert("Error: " + error.message); }, 
-            async () => {
-                const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-                status.innerText = "Saving to Database...";
-                
-                // Firestore এ ডেটা সেভ করা
-                await addDoc(collection(db, "userVideos"), {
-                    title: title,
-                    url: downloadURL,
-                    createdAt: serverTimestamp()
-                });
+        try {
+            msg.style.color = "yellow";
+            msg.innerText = "সেভ হচ্ছে...";
+            
+            await addDoc(collection(db, "userVideos"), {
+                title: title,
+                url: directLink,
+                createdAt: serverTimestamp()
+            });
 
-                status.innerText = "Success! Video is Live.";
-                document.getElementById('title').value = "";
-            }
-        );
+            msg.style.color = "green";
+            msg.innerText = "সফলভাবে সেভ হয়েছে! ইনডেক্স পেজ চেক করুন।";
+            document.getElementById('title').value = "";
+            document.getElementById('rawLink').value = "";
+        } catch (e) {
+            msg.style.color = "red";
+            msg.innerText = "এরর: " + e.message;
+        }
     }
 </script>
 </body>
-  </html>
-  
+</html>
