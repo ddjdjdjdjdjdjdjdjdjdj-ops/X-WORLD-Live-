@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>X-WORLD Admin Panel</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f4f4f4; text-align: center; padding: 20px; }
+        .container { background: #fff; padding: 20px; border-radius: 10px; max-width: 400px; margin: auto; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        input { width: 90%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; }
+        button { background: #28a745; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; }
+        #status { margin-top: 15px; color: blue; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>X-WORLD Upload</h2>
+    <input type="text" id="title" placeholder="Video Title">
+    <input type="file" id="videoFile" accept="video/*">
+    <button onclick="uploadVideo()">Upload Now</button>
+    <div id="status"></div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+
+    // আপনার ফায়ারবেস কনফিগ
+    const firebaseConfig = {
+        apiKey: "AIzaSyBWhYvIKGHfDO4NrH0G5N692FljzD_wmZc",
+        authDomain: "misti-am.firebaseapp.com",
+        projectId: "misti-am",
+        storageBucket: "misti-am.firebasestorage.app",
+        messagingSenderId: "335857181187",
+        appId: "1:335857181187:web:eee24712600f7018262436"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const storage = getStorage(app);
+
+    window.uploadVideo = async function() {
+        const title = document.getElementById('title').value;
+        const file = document.getElementById('videoFile').files[0];
+        const status = document.getElementById('status');
+
+        if (!title || !file) {
+            alert("Please provide both title and video!");
+            return;
+        }
+
+        status.innerText = "Uploading to Storage...";
+        const storageRef = ref(storage, 'videos/' + file.name);
+        const uploadTask = uploadBytesResumable(storageRef, file);
+
+        uploadTask.on('state_changed', 
+            (snapshot) => {
+                const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                status.innerText = "Uploading: " + Math.round(progress) + "%";
+            }, 
+            (error) => { alert("Error: " + error.message); }, 
+            async () => {
+                const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+                status.innerText = "Saving to Database...";
+                
+                // Firestore এ ডেটা সেভ করা
+                await addDoc(collection(db, "userVideos"), {
+                    title: title,
+                    url: downloadURL,
+                    createdAt: serverTimestamp()
+                });
+
+                status.innerText = "Success! Video is Live.";
+                document.getElementById('title').value = "";
+            }
+        );
+    }
+</script>
+</body>
+  </html>
+  
