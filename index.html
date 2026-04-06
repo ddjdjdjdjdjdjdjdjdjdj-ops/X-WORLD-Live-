@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="monetag" content="38de9411d020ddc105ced3c89777b600">
     <title>X-WORLD Live-</title>
     <style>
         body { background: #000; color: #fff; font-family: sans-serif; margin: 0; padding: 10px; }
@@ -14,17 +13,7 @@
         video { width: 100%; display: block; background: #000; height: auto; max-height: 450px; }
         .title { padding: 15px; font-size: 18px; font-weight: bold; border-top: 1px solid #222; }
         .no-data { text-align: center; color: #666; margin-top: 50px; }
-        
-        /* অ্যাড স্টাইল */
-        .ad-slot { 
-            background: #1a1a1a; 
-            margin-bottom: 20px; 
-            padding: 15px; 
-            border-radius: 10px; 
-            text-align: center; 
-            border: 1px dashed #444;
-        }
-        .ad-label { color: #666; font-size: 10px; margin-bottom: 10px; display: block; }
+        .ad-slot { background: #1a1a1a; margin-bottom: 20px; padding: 10px; border-radius: 10px; text-align: center; border: 1px dashed #444; }
     </style>
 </head>
 <body>
@@ -51,14 +40,12 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     const videoList = document.getElementById('videoList');
-    const status = document.getElementById('status');
 
-    // ডাটাবেস থেকে ভিডিও আনা
     const q = query(collection(db, "userVideos"), orderBy("createdAt", "desc"));
 
     onSnapshot(q, (snapshot) => {
         if (snapshot.empty) {
-            status.innerText = "এখনো কোনো ভিডিও আপলোড করা হয়নি।";
+            document.getElementById('status').innerText = "এখনো কোনো ভিডিও নেই।";
             return;
         }
 
@@ -69,62 +56,33 @@
             const data = doc.data();
             videoCount++;
 
-            // ১. ভিডিও কার্ড তৈরি
-            const videoDiv = document.createElement('div');
-            videoDiv.className = 'video-card';
-            videoDiv.innerHTML = `
-                <video controls>
-                    <source src="${data.url}" type="video/mp4">
-                    আপনার ব্রাউজার ভিডিও সাপোর্ট করে না।
-                </video>
+            // ১. ভিডিও কার্ড (আগের সব ভিডিও এখানে লোড হবে)
+            const div = document.createElement('div');
+            div.className = 'video-card';
+            div.innerHTML = `
+                <video controls><source src="${data.url}" type="video/mp4"></video>
                 <div class="title">${data.title}</div>
             `;
-            videoList.appendChild(videoDiv);
+            videoList.appendChild(div);
 
             // ২. প্রতি ২টা ভিডিওর পর আপনার Adsterra অ্যাড বসানো
             if (videoCount % 2 === 0) {
                 const adDiv = document.createElement('div');
                 adDiv.className = 'ad-slot';
-                
-                // এখানে আপনার দেওয়া অ্যাড কোডগুলো ইনজেক্ট করা হচ্ছে
-                adDiv.innerHTML = `
-                    <span class="ad-label">SPONSORED</span>
-                    
-                    <div id="ad-300x250-${videoCount}"></div>
-                    
-                    <div id="ad-native-${videoCount}" style="margin-top:15px;"></div>
-                `;
+                adDiv.innerHTML = '<p style="color:#666;font-size:10px;margin-bottom:8px;">ADVERTISEMENT</p><div id="at-inner-' + videoCount + '"></div>';
                 videoList.appendChild(adDiv);
 
-                // অ্যাড স্ক্রিপ্ট রান করানো
-                // ৩00x250 script
+                // অ্যাড স্ক্রিপ্ট (আপনার দেওয়া কোড)
                 const s1 = document.createElement('script');
                 s1.type = 'text/javascript';
-                s1.text = `
-                    atOptions = {
-                        'key' : '6dd42e61fdb77100ae25a4653ee62d7f',
-                        'format' : 'iframe',
-                        'height' : 250,
-                        'width' : 300,
-                        'params' : {}
-                    };
-                `;
-                adDiv.querySelector(\`#ad-300x250-\${videoCount}\`).appendChild(s1);
+                s1.text = `atOptions = { 'key' : '6dd42e61fdb77100ae25a4653ee62d7f', 'format' : 'iframe', 'height' : 250, 'width' : 300, 'params' : {} };`;
+                adDiv.querySelector('#at-inner-' + videoCount).appendChild(s1);
 
                 const s2 = document.createElement('script');
-                s2.type = 'text/javascript';
                 s2.src = 'https://www.highperformanceformat.com/6dd42e61fdb77100ae25a4653ee62d7f/invoke.js';
-                adDiv.querySelector(\`#ad-300x250-\${videoCount}\`).appendChild(s2);
-
-                // Native Network script
-                const s3 = document.createElement('script');
-                s3.async = true;
-                s3.src = 'https://pl29076747.profitablecpmratenetwork.com/938f6cade40341aab3d3c0d9e92a53bc/invoke.js';
-                adDiv.querySelector(\`#ad-native-\${videoCount}\`).appendChild(s3);
+                adDiv.querySelector('#at-inner-' + videoCount).appendChild(s2);
             }
         });
-    }, (error) => {
-        status.innerText = "Error: " + error.message;
     });
 </script>
 </body>
