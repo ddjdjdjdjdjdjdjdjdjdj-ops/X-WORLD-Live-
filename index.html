@@ -9,11 +9,33 @@
         header { text-align: center; padding: 20px; border-bottom: 1px solid #333; }
         h1 { color: red; margin: 0; }
         #videoList { max-width: 600px; margin: 20px auto; }
-        .video-card { background: #111; border: 1px solid #333; border-radius: 10px; margin-bottom: 20px; overflow: hidden; }
-        video { width: 100%; display: block; background: #000; height: auto; max-height: 450px; }
-        .title { padding: 15px; font-size: 18px; font-weight: bold; border-top: 1px solid #222; }
-        .no-data { text-align: center; color: #666; margin-top: 50px; }
-        .ad-slot { background: #1a1a1a; margin-bottom: 20px; padding: 10px; border-radius: 10px; text-align: center; border: 1px dashed #444; min-height: 280px; }
+        
+        .video-card { position: relative; background: #111; border: 1px solid #333; border-radius: 10px; margin-bottom: 25px; overflow: hidden; min-height: 250px;}
+        video { width: 100%; display: none; background: #000; height: auto; max-height: 450px; }
+        .title { padding: 15px; font-size: 18px; font-weight: bold; }
+
+        /* অ্যাড ওভারলে স্টাইল */
+        .ad-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.92); z-index: 100;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            cursor: pointer;
+        }
+        .timer-box {
+            position: absolute; top: 10px; right: 10px;
+            background: rgba(255,255,255,0.2); padding: 5px 12px;
+            border-radius: 5px; font-size: 14px; border: 1px solid #555;
+        }
+        .play-btn {
+            padding: 12px 25px; background: #222; color: #666;
+            border: 1px solid #444; border-radius: 5px; font-weight: bold;
+            text-transform: uppercase; cursor: not-allowed; transition: 0.3s;
+        }
+        .skip-active {
+            background: red !important; color: white !important;
+            border-color: #fff !important; cursor: pointer !important;
+            box-shadow: 0 0 20px rgba(255,0,0,0.6);
+        }
     </style>
 </head>
 <body>
@@ -21,7 +43,7 @@
 <header><h1>X-WORLD Live-</h1></header>
 
 <div id="videoList">
-    <div class="no-data" id="status">ভিডিও খোঁজা হচ্ছে...</div>
+    <div id="status" style="text-align:center; margin-top:50px; color:#888;">ভিডিও লোড হচ্ছে...</div>
 </div>
 
 <script type="module">
@@ -41,56 +63,78 @@
     const db = getFirestore(app);
     const videoList = document.getElementById('videoList');
 
+    // আপনার দেওয়া ডাইরেক্ট লিঙ্কটি এখানে সেট করা হয়েছে
+    const myDirectLink = "https://www.profitablecpmratenetwork.com/k0jc7ngbcn?key=6917a323c383b86cb86461e829e27479";
+
     onSnapshot(query(collection(db, "userVideos"), orderBy("createdAt", "desc")), (snapshot) => {
         if (snapshot.empty) {
-            document.getElementById('status').innerText = "এখনো কোনো ভিডিও নেই।";
+            document.getElementById('status').innerText = "কোনো ভিডিও পাওয়া যায়নি।";
             return;
         }
-
         videoList.innerHTML = ""; 
-        let videoCount = 0;
-
         snapshot.forEach((doc) => {
             const data = doc.data();
-            videoCount++;
-
-            // ভিডিও কার্ড
-            const div = document.createElement('div');
-            div.className = 'video-card';
-            div.innerHTML = `
-                <video controls><source src="${data.url}" type="video/mp4"></video>
-                <div class="title">${data.title}</div>
-            `;
-            videoList.appendChild(div);
-
-            // ২টা ভিডিওর পর অ্যাড
-            if (videoCount % 2 === 0) {
-                const adDiv = document.createElement('div');
-                adDiv.className = 'ad-slot';
-                const adId = 'ad-container-' + videoCount;
-                adDiv.innerHTML = `<span style="color:#666;font-size:10px;">ADVERTISEMENT</span><div id="${adId}"></div>`;
-                videoList.appendChild(adDiv);
-
-                // অ্যাড কোড ইনজেক্ট
-                try {
-                    const adTarget = adDiv.querySelector('#' + adId);
-                    
-                    const sOptions = document.createElement('script');
-                    sOptions.type = 'text/javascript';
-                    sOptions.text = `atOptions = { 'key' : '6dd42e61fdb77100ae25a4653ee62d7f', 'format' : 'iframe', 'height' : 250, 'width' : 300, 'params' : {} };`;
-                    
-                    const sInvoke = document.createElement('script');
-                    sInvoke.type = 'text/javascript';
-                    sInvoke.src = 'https://www.highperformanceformat.com/6dd42e61fdb77100ae25a4653ee62d7f/invoke.js';
-                    
-                    adTarget.appendChild(sOptions);
-                    adTarget.appendChild(sInvoke);
-                } catch (e) {
-                    console.log("Ad Error: ", e);
-                }
-            }
+            createVideoCard(data);
         });
     });
+
+    function createVideoCard(data) {
+        const card = document.createElement('div');
+        card.className = 'video-card';
+        
+        card.innerHTML = `
+            <div class="video-container" style="position:relative; width:100%; height:250px; background:#000;">
+                <video controls><source src="${data.url}" type="video/mp4"></video>
+                <div class="ad-overlay">
+                    <div class="timer-box">Wait <span class="sec">5</span>s</div>
+                    <div style="text-align:center; margin-bottom:15px;">
+                        <p style="color:red; font-size:18px; font-weight:bold; margin:0;">VIDEO LOCKED</p>
+                        <p style="font-size:11px; color:#aaa;">ভিডিও দেখতে এখানে ক্লিক করুন</p>
+                    </div>
+                    <button class="play-btn">Unlock Video</button>
+                </div>
+            </div>
+            <div class="title">${data.title}</div>
+        `;
+        videoList.appendChild(card);
+
+        const overlay = card.querySelector('.ad-overlay');
+        const video = card.querySelector('video');
+        const skipBtn = card.querySelector('.play-btn');
+        const secText = card.querySelector('.sec');
+        const container = card.querySelector('.video-container');
+        
+        let timeLeft = 5;
+        let canSkip = false;
+
+        // ১. ভিডিওর ওপর ক্লিক করলে ডাইরেক্ট লিঙ্ক ওপেন হবে
+        overlay.onclick = function() {
+            window.open(myDirectLink, '_blank');
+        };
+
+        // ২. ৫ সেকেন্ডের টাইমার কাউন্টডাউন
+        const timer = setInterval(() => {
+            timeLeft--;
+            secText.innerText = timeLeft;
+            
+            if (timeLeft <= 0) {
+                clearInterval(timer);
+                canSkip = true;
+                card.querySelector('.timer-box').style.display = 'none';
+                skipBtn.innerText = "Skip Ad & Play Video";
+                skipBtn.classList.add('skip-active');
+                
+                // ৩. স্কিপ বাটনে ক্লিক করলে অ্যাড সরবে এবং ভিডিও আসবে
+                skipBtn.onclick = (e) => {
+                    e.stopPropagation(); // যাতে আবার ডাইরেক্ট লিঙ্ক না খুলে
+                    overlay.remove();
+                    container.style.height = "auto";
+                    video.style.display = "block";
+                    video.play();
+                };
+            }
+        }, 1000);
+    }
 </script>
 </body>
 </html>
