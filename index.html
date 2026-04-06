@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>X-WORLD Live-</title>
+    <title>X-WORLD Live - Watch & Earn</title>
     <style>
         body { background: #000; color: #fff; font-family: sans-serif; margin: 0; padding: 10px; }
         header { text-align: center; padding: 20px; border-bottom: 1px solid #333; }
@@ -11,31 +11,29 @@
         #videoList { max-width: 600px; margin: 20px auto; }
         
         .video-card { position: relative; background: #111; border: 1px solid #333; border-radius: 10px; margin-bottom: 25px; overflow: hidden; }
-        
-        /* Video Controls are visible */
         video { width: 100%; display: block; background: #000; height: auto; max-height: 450px; }
+        .title { padding: 15px; font-size: 18px; font-weight: bold; }
 
-        /* Ad Layer - Video-r opore thakbe kintu controls dhakbe na */
+        /* ইউটিউব স্টাইল অ্যাড লেয়ার */
         .ad-layer {
             position: absolute; top: 0; left: 0; width: 100%; height: calc(100% - 50px);
             z-index: 10; display: flex; align-items: center; justify-content: center;
-            cursor: pointer; background: rgba(0,0,0,0.01);
+            cursor: pointer; background: rgba(0,0,0,0.1);
         }
 
         .play-center-btn {
-            width: 60px; height: 60px; background: rgba(0,0,0,0.4);
+            width: 60px; height: 60px; background: rgba(0,0,0,0.5);
             border-radius: 50%; display: flex; align-items: center; justify-content: center;
             font-size: 30px; color: #fff; border: 2px solid #fff;
         }
 
-        /* Skip Section - Ekdom YouTube er moto bottom-right e */
         .skip-box {
             position: absolute; bottom: 65px; right: 0;
             z-index: 20; display: none;
         }
 
         .timer-text {
-            background: rgba(0,0,0,0.8); color: #fff; padding: 8px 15px;
+            background: rgba(0,0,0,0.85); color: #fff; padding: 8px 15px;
             font-size: 13px; border-left: 4px solid red;
         }
 
@@ -55,6 +53,7 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getFirestore, collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+    // আপনার ফায়ারবেস কনফিগ (আগেরটাই আছে)
     const firebaseConfig = {
         apiKey: "AIzaSyBWhYvIKGHfDO4NrH0G5N692FljzD_wmZc",
         authDomain: "misti-am.firebaseapp.com",
@@ -67,19 +66,18 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     const videoList = document.getElementById('videoList');
-    
-    // Apnar Adsterra Direct Link
-    const myDirectLink = "https://www.profitablecpmratenetwork.com/k0jc7ngbcn?key=6917a323c383b86cb86461e829e27479";
 
     onSnapshot(query(collection(db, "userVideos"), orderBy("createdAt", "desc")), (snapshot) => {
         videoList.innerHTML = ""; 
         snapshot.forEach((doc) => {
             const data = doc.data();
+            const currentVideoAdLink = data.adLink; // ফায়ারবেস থেকে আসা অ্যাড লিঙ্ক
+
             const card = document.createElement('div');
             card.className = 'video-card';
             card.innerHTML = `
                 <div style="position:relative;">
-                    <video controls playsinline preload="metadata">
+                    <video id="v-${doc.id}" controls playsinline preload="metadata">
                         <source src="${data.url}#t=0.1" type="video/mp4">
                     </video>
                     
@@ -105,14 +103,14 @@
             const playIcon = card.querySelector('.play-center-btn');
 
             adLayer.onclick = function() {
-                // 1. Direct Link open hobe
-                window.open(myDirectLink, '_blank');
+                // ১. অ্যাডমিন থেকে সেট করা ওই ভিডিওর লিঙ্কে নিয়ে যাবে
+                window.open(currentVideoAdLink, '_blank');
                 
-                // 2. Video chalu hobe kintu ad layer thakbe
+                // ২. ভিডিও চালু হবে এবং ৫ সেকেন্ড টাইমার শুরু হবে
                 video.play();
                 playIcon.style.display = 'none';
                 skipBox.style.display = 'block';
-                adLayer.style.pointerEvents = 'none'; // Timer cholakalin click bondho
+                adLayer.style.pointerEvents = 'none'; 
 
                 let timeLeft = 5;
                 const timer = setInterval(() => {
@@ -128,13 +126,12 @@
 
             skipBtn.onclick = (e) => {
                 e.stopPropagation();
-                adLayer.remove(); // Ad layer shore jabe
-                skipBox.remove(); // Skip button shore jabe
-                video.play(); // Pura video dekhbe ebar
+                adLayer.remove();
+                skipBox.remove();
+                video.play();
             };
         });
     });
 </script>
 </body>
 </html>
-
