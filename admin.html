@@ -3,34 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Panel | X-WORLD</title>
+    <title>X-WORLD Admin - Upload Video</title>
     <style>
-        body { background: #121212; color: white; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .admin-box { background: #1e1e1e; padding: 30px; border-radius: 15px; box-shadow: 0 0 20px rgba(0,0,0,0.5); width: 90%; max-width: 400px; text-align: center; }
-        h2 { margin-bottom: 20px; color: #fff; }
-        input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #333; background: #2a2a2a; color: white; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; background: #e50914; border: none; color: white; font-weight: bold; border-radius: 8px; cursor: pointer; margin-top: 10px; }
-        button:hover { background: #b20710; }
-        #msg { margin-top: 15px; font-size: 14px; }
-        .success { color: #2ecc71; }
-        .error { color: #e74c3c; }
+        body { background: #111; color: #fff; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .upload-box { background: #222; padding: 30px; border-radius: 15px; width: 90%; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 5px; border: 1px solid #444; background: #333; color: #fff; box-sizing: border-box; }
+        button { width: 100%; padding: 15px; background: red; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        button:hover { background: darkred; }
+        h2 { text-align: center; color: red; margin-bottom: 20px; }
     </style>
 </head>
 <body>
 
-<div class="admin-box">
-    <h2>Admin Panel</h2>
-    <input type="text" id="title" placeholder="ভিডিওর টাইটেল লিখুন">
-    <input type="text" id="link" placeholder="ভিডিওর লিঙ্ক পেস্ট করুন (Cloudinary/Drive)">
-    <button id="saveBtn">সবুজ সংকেত দিন (Save)</button>
-    <div id="msg"></div>
+<div class="upload-box">
+    <h2>Upload New Video</h2>
+    <input type="text" id="vTitle" placeholder="ভিডিওর টাইটেল লিখুন">
+    <input type="text" id="vUrl" placeholder="ভিডিও ডাইরেক্ট লিঙ্ক (MP4)">
+    <input type="text" id="adLink" placeholder="এই ভিডিওর Smart Link (Adsterra)">
+    <button id="uploadBtn">পাবলিশ করুন</button>
 </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    // আপনার Firebase Config
     const firebaseConfig = {
         apiKey: "AIzaSyBWhYvIKGHfDO4NrH0G5N692FljzD_wmZc",
         authDomain: "misti-am.firebaseapp.com",
@@ -43,37 +39,30 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    document.getElementById('saveBtn').addEventListener('click', async () => {
-        const title = document.getElementById('title').value;
-        const link = document.getElementById('link').value;
-        const msg = document.getElementById('msg');
+    document.getElementById('uploadBtn').onclick = async () => {
+        const title = document.getElementById('vTitle').value;
+        const url = document.getElementById('vUrl').value;
+        const adLink = document.getElementById('adLink').value;
 
-        if (!title || !link) {
-            msg.innerHTML = "<span class='error'>টাইটেল এবং লিঙ্ক দুটোই দিন!</span>";
-            return;
+        if (title && url && adLink) {
+            try {
+                await addDoc(collection(db, "userVideos"), {
+                    title: title,
+                    url: url,
+                    adLink: adLink, // প্রতিটি ভিডিওর আলাদা অ্যাড লিঙ্ক সেভ হচ্ছে
+                    createdAt: serverTimestamp()
+                });
+                alert("সফলভাবে আপলোড হয়েছে!");
+                document.getElementById('vTitle').value = "";
+                document.getElementById('vUrl').value = "";
+                document.getElementById('adLink').value = "";
+            } catch (e) {
+                alert("Error: " + e.message);
+            }
+        } else {
+            alert("সবগুলো বক্স পূরণ করুন!");
         }
-
-        // লিঙ্ক চেকিং রুলস আপডেট (Cloudinary ও Drive দুটোই কাজ করবে)
-        if (!link.includes("cloudinary.com") && !link.includes("drive.google.com") && !link.includes("res.cloudinary.com")) {
-            msg.innerHTML = "<span class='error'>ভুল লিঙ্ক! সঠিক ভিডিও লিঙ্ক দিন।</span>";
-            return;
-        }
-
-        try {
-            msg.innerHTML = "সেভ হচ্ছে...";
-            await addDoc(collection(db, "userVideos"), {
-                title: title,
-                url: link,
-                createdAt: serverTimestamp()
-            });
-            msg.innerHTML = "<span class='success'>সফলভাবে সেভ হয়েছে! ইনডেক্স পেজ চেক করুন।</span>";
-            document.getElementById('title').value = "";
-            document.getElementById('link').value = "";
-        } catch (e) {
-            msg.innerHTML = "<span class='error'>এরর: " + e.message + "</span>";
-        }
-    });
+    };
 </script>
-
 </body>
 </html>
