@@ -11,30 +11,38 @@
         #videoList { max-width: 600px; margin: 20px auto; }
         
         .video-card { position: relative; background: #111; border: 1px solid #333; border-radius: 10px; margin-bottom: 25px; overflow: hidden; }
-        video { width: 100%; display: block; background: #000; height: auto; max-height: 450px; cursor: pointer; }
-        .title { padding: 15px; font-size: 18px; font-weight: bold; }
-
-        /* অ্যাড লেয়ার - ভিডিওর ওপরেই থাকবে */
-        .ad-container {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; z-index: 100; display: none; /* শুরুতে বন্ধ */
-            flex-direction: column; align-items: center; justify-content: center;
-        }
         
-        iframe { width: 100%; height: 80%; border: none; background: #222; }
+        /* Video Controls are visible */
+        video { width: 100%; display: block; background: #000; height: auto; max-height: 450px; }
 
-        .skip-section {
-            width: 100%; height: 20%; background: #111;
-            display: flex; align-items: center; justify-content: flex-end; padding-right: 20px;
+        /* Ad Layer - Video-r opore thakbe kintu controls dhakbe na */
+        .ad-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: calc(100% - 50px);
+            z-index: 10; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; background: rgba(0,0,0,0.01);
+        }
+
+        .play-center-btn {
+            width: 60px; height: 60px; background: rgba(0,0,0,0.4);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-size: 30px; color: #fff; border: 2px solid #fff;
+        }
+
+        /* Skip Section - Ekdom YouTube er moto bottom-right e */
+        .skip-box {
+            position: absolute; bottom: 65px; right: 0;
+            z-index: 20; display: none;
+        }
+
+        .timer-text {
+            background: rgba(0,0,0,0.8); color: #fff; padding: 8px 15px;
+            font-size: 13px; border-left: 4px solid red;
         }
 
         .skip-btn {
-            padding: 8px 16px; background: rgba(255,255,255,0.1); color: #ccc;
-            border: 1px solid #444; border-radius: 4px; font-size: 14px; cursor: not-allowed;
-        }
-
-        .skip-btn.active {
-            background: #fff; color: #000; cursor: pointer; font-weight: bold;
+            background: #f1f1f1; color: #000; padding: 10px 25px;
+            font-size: 14px; font-weight: bold; border: 1px solid #ccc;
+            cursor: pointer; display: none;
         }
     </style>
 </head>
@@ -60,7 +68,7 @@
     const db = getFirestore(app);
     const videoList = document.getElementById('videoList');
     
-    // আপনার ডাইরেক্ট লিঙ্ক
+    // Apnar Adsterra Direct Link
     const myDirectLink = "https://www.profitablecpmratenetwork.com/k0jc7ngbcn?key=6917a323c383b86cb86461e829e27479";
 
     onSnapshot(query(collection(db, "userVideos"), orderBy("createdAt", "desc")), (snapshot) => {
@@ -71,13 +79,17 @@
             card.className = 'video-card';
             card.innerHTML = `
                 <div style="position:relative;">
-                    <video preload="metadata"><source src="${data.url}#t=0.5" type="video/mp4"></video>
+                    <video controls playsinline preload="metadata">
+                        <source src="${data.url}#t=0.1" type="video/mp4">
+                    </video>
                     
-                    <div class="ad-container">
-                        <iframe src="${myDirectLink}"></iframe>
-                        <div class="skip-section">
-                            <button class="skip-btn">Skip Ad in 5s</button>
-                        </div>
+                    <div class="ad-layer">
+                        <div class="play-center-btn">▶</div>
+                    </div>
+
+                    <div class="skip-box">
+                        <div class="timer-text">Ad will end in <span class="sec">5</span>s</div>
+                        <button class="skip-btn">Skip Ad ❯</button>
                     </div>
                 </div>
                 <div class="title">${data.title}</div>
@@ -85,40 +97,44 @@
             videoList.appendChild(card);
 
             const video = card.querySelector('video');
-            const adContainer = card.querySelector('.ad-container');
+            const adLayer = card.querySelector('.ad-layer');
+            const skipBox = card.querySelector('.skip-box');
+            const timerText = card.querySelector('.timer-text');
             const skipBtn = card.querySelector('.skip-btn');
+            const secSpan = card.querySelector('.sec');
+            const playIcon = card.querySelector('.play-center-btn');
 
-            // ১. ভিডিওতে ক্লিক করলে অ্যাড লেয়ার আসবে
-            video.onclick = function() {
-                if(adContainer.style.display !== 'flex') {
-                    adContainer.style.display = 'flex';
-                    startAdTimer(skipBtn, adContainer, video);
-                }
+            adLayer.onclick = function() {
+                // 1. Direct Link open hobe
+                window.open(myDirectLink, '_blank');
+                
+                // 2. Video chalu hobe kintu ad layer thakbe
+                video.play();
+                playIcon.style.display = 'none';
+                skipBox.style.display = 'block';
+                adLayer.style.pointerEvents = 'none'; // Timer cholakalin click bondho
+
+                let timeLeft = 5;
+                const timer = setInterval(() => {
+                    timeLeft--;
+                    secSpan.innerText = timeLeft;
+                    if (timeLeft <= 0) {
+                        clearInterval(timer);
+                        timerText.style.display = 'none';
+                        skipBtn.style.display = 'block';
+                    }
+                }, 1000);
+            };
+
+            skipBtn.onclick = (e) => {
+                e.stopPropagation();
+                adLayer.remove(); // Ad layer shore jabe
+                skipBox.remove(); // Skip button shore jabe
+                video.play(); // Pura video dekhbe ebar
             };
         });
     });
-
-    function startAdTimer(btn, container, vid) {
-        let count = 5;
-        btn.innerText = `Skip Ad in ${count}s`;
-        
-        const timer = setInterval(() => {
-            count--;
-            if (count > 0) {
-                btn.innerText = `Skip Ad in ${count}s`;
-            } else {
-                clearInterval(timer);
-                btn.innerText = "Skip Ad & Play Video";
-                btn.classList.add('active');
-                
-                btn.onclick = (e) => {
-                    e.stopPropagation();
-                    container.style.display = 'none';
-                    vid.play();
-                };
-            }
-        }, 1000);
-    }
 </script>
 </body>
 </html>
+
