@@ -10,31 +10,38 @@
         h1 { color: red; margin: 0; }
         #videoList { max-width: 600px; margin: 20px auto; }
         
-        .video-card { position: relative; background: #111; border: 1px solid #333; border-radius: 10px; margin-bottom: 25px; overflow: hidden; min-height: 250px;}
-        video { width: 100%; display: none; background: #000; height: auto; max-height: 450px; }
+        .video-card { position: relative; background: #111; border: 1px solid #333; border-radius: 10px; margin-bottom: 25px; overflow: hidden; }
+        video { width: 100%; display: block; background: #000; height: auto; max-height: 450px; }
         .title { padding: 15px; font-size: 18px; font-weight: bold; }
 
-        /* অ্যাড ওভারলে স্টাইল */
+        /* অ্যাড ওভারলে - এখন এটি স্বচ্ছ থাকবে যাতে ভিডিওর ছবি দেখা যায় */
         .ad-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.92); z-index: 100;
+            background: rgba(0,0,0,0.1); /* হালকা স্বচ্ছ */
+            z-index: 100;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             cursor: pointer;
         }
+
+        /* প্লে আইকন বাটন */
+        .play-icon {
+            width: 70px; height: 70px; background: rgba(255,0,0,0.8);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-size: 30px; color: white; box-shadow: 0 0 15px rgba(0,0,0,0.5);
+        }
+
         .timer-box {
             position: absolute; top: 10px; right: 10px;
-            background: rgba(255,255,255,0.2); padding: 5px 12px;
-            border-radius: 5px; font-size: 14px; border: 1px solid #555;
+            background: rgba(0,0,0,0.7); padding: 5px 12px;
+            border-radius: 5px; font-size: 14px; border: 1px solid #fff;
+            display: none; /* শুরুতে লুকানো থাকবে */
         }
-        .play-btn {
-            padding: 12px 25px; background: #222; color: #666;
-            border: 1px solid #444; border-radius: 5px; font-weight: bold;
-            text-transform: uppercase; cursor: not-allowed; transition: 0.3s;
-        }
-        .skip-active {
-            background: red !important; color: white !important;
-            border-color: #fff !important; cursor: pointer !important;
-            box-shadow: 0 0 20px rgba(255,0,0,0.6);
+
+        .skip-btn {
+            position: absolute; bottom: 20px; right: 10px;
+            padding: 10px 20px; background: red; color: white;
+            border: none; border-radius: 5px; font-weight: bold;
+            display: none; cursor: pointer;
         }
     </style>
 </head>
@@ -42,9 +49,7 @@
 
 <header><h1>X-WORLD Live-</h1></header>
 
-<div id="videoList">
-    <div id="status" style="text-align:center; margin-top:50px; color:#888;">ভিডিও লোড হচ্ছে...</div>
-</div>
+<div id="videoList"></div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -62,79 +67,62 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     const videoList = document.getElementById('videoList');
-
-    // আপনার দেওয়া ডাইরেক্ট লিঙ্কটি এখানে সেট করা হয়েছে
     const myDirectLink = "https://www.profitablecpmratenetwork.com/k0jc7ngbcn?key=6917a323c383b86cb86461e829e27479";
 
     onSnapshot(query(collection(db, "userVideos"), orderBy("createdAt", "desc")), (snapshot) => {
-        if (snapshot.empty) {
-            document.getElementById('status').innerText = "কোনো ভিডিও পাওয়া যায়নি।";
-            return;
-        }
         videoList.innerHTML = ""; 
         snapshot.forEach((doc) => {
             const data = doc.data();
-            createVideoCard(data);
+            const card = document.createElement('div');
+            card.className = 'video-card';
+            card.innerHTML = `
+                <div style="position:relative;">
+                    <video preload="metadata"><source src="${data.url}#t=0.5" type="video/mp4"></video>
+                    <div class="ad-overlay">
+                        <div class="play-icon">▶</div>
+                        <div class="timer-box">Wait <span class="sec">5</span>s</div>
+                        <button class="skip-btn">Skip Ad & Play</button>
+                    </div>
+                </div>
+                <div class="title">${data.title}</div>
+            `;
+            videoList.appendChild(card);
+
+            const overlay = card.querySelector('.ad-overlay');
+            const video = card.querySelector('video');
+            const playIcon = card.querySelector('.play-icon');
+            const timerBox = card.querySelector('.timer-box');
+            const skipBtn = card.querySelector('.skip-btn');
+            const secText = card.querySelector('.sec');
+
+            overlay.onclick = function() {
+                // ১. ক্লিক করলে অ্যাড লিঙ্ক খুলবে
+                window.open(myDirectLink, '_blank');
+                
+                // ২. ক্লিক করার পর টাইমার শুরু হবে
+                playIcon.style.display = 'none';
+                overlay.style.background = "rgba(0,0,0,0.8)"; // ক্লিক করলে পর্দা কালো হবে
+                timerBox.style.display = 'block';
+                
+                let timeLeft = 5;
+                const timer = setInterval(() => {
+                    timeLeft--;
+                    secText.innerText = timeLeft;
+                    if (timeLeft <= 0) {
+                        clearInterval(timer);
+                        timerBox.style.display = 'none';
+                        skipBtn.style.display = 'block';
+                    }
+                }, 1000);
+            };
+
+            skipBtn.onclick = (e) => {
+                e.stopPropagation();
+                overlay.remove();
+                video.play();
+            };
         });
     });
-
-    function createVideoCard(data) {
-        const card = document.createElement('div');
-        card.className = 'video-card';
-        
-        card.innerHTML = `
-            <div class="video-container" style="position:relative; width:100%; height:250px; background:#000;">
-                <video controls><source src="${data.url}" type="video/mp4"></video>
-                <div class="ad-overlay">
-                    <div class="timer-box">Wait <span class="sec">5</span>s</div>
-                    <div style="text-align:center; margin-bottom:15px;">
-                        <p style="color:red; font-size:18px; font-weight:bold; margin:0;">VIDEO LOCKED</p>
-                        <p style="font-size:11px; color:#aaa;">ভিডিও দেখতে এখানে ক্লিক করুন</p>
-                    </div>
-                    <button class="play-btn">Unlock Video</button>
-                </div>
-            </div>
-            <div class="title">${data.title}</div>
-        `;
-        videoList.appendChild(card);
-
-        const overlay = card.querySelector('.ad-overlay');
-        const video = card.querySelector('video');
-        const skipBtn = card.querySelector('.play-btn');
-        const secText = card.querySelector('.sec');
-        const container = card.querySelector('.video-container');
-        
-        let timeLeft = 5;
-        let canSkip = false;
-
-        // ১. ভিডিওর ওপর ক্লিক করলে ডাইরেক্ট লিঙ্ক ওপেন হবে
-        overlay.onclick = function() {
-            window.open(myDirectLink, '_blank');
-        };
-
-        // ২. ৫ সেকেন্ডের টাইমার কাউন্টডাউন
-        const timer = setInterval(() => {
-            timeLeft--;
-            secText.innerText = timeLeft;
-            
-            if (timeLeft <= 0) {
-                clearInterval(timer);
-                canSkip = true;
-                card.querySelector('.timer-box').style.display = 'none';
-                skipBtn.innerText = "Skip Ad & Play Video";
-                skipBtn.classList.add('skip-active');
-                
-                // ৩. স্কিপ বাটনে ক্লিক করলে অ্যাড সরবে এবং ভিডিও আসবে
-                skipBtn.onclick = (e) => {
-                    e.stopPropagation(); // যাতে আবার ডাইরেক্ট লিঙ্ক না খুলে
-                    overlay.remove();
-                    container.style.height = "auto";
-                    video.style.display = "block";
-                    video.play();
-                };
-            }
-        }, 1000);
-    }
 </script>
 </body>
 </html>
