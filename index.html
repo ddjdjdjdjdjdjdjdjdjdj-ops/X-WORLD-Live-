@@ -1,3 +1,29 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>X-WORLD Live-</title>
+    <style>
+        body { background: #000; color: #fff; font-family: sans-serif; margin: 0; padding: 10px; }
+        header { text-align: center; padding: 20px; border-bottom: 1px solid #333; }
+        h1 { color: red; margin: 0; }
+        #videoList { max-width: 600px; margin: 20px auto; }
+        .video-card { background: #111; border: 1px solid #333; border-radius: 10px; margin-bottom: 20px; overflow: hidden; }
+        video { width: 100%; display: block; background: #000; height: auto; max-height: 450px; }
+        .title { padding: 15px; font-size: 18px; font-weight: bold; border-top: 1px solid #222; }
+        .no-data { text-align: center; color: #666; margin-top: 50px; }
+        .ad-slot { background: #1a1a1a; margin-bottom: 20px; padding: 10px; border-radius: 10px; text-align: center; border: 1px dashed #444; min-height: 280px; }
+    </style>
+</head>
+<body>
+
+<header><h1>X-WORLD Live-</h1></header>
+
+<div id="videoList">
+    <div class="no-data" id="status">ভিডিও খোঁজা হচ্ছে...</div>
+</div>
+
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getFirestore, collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
@@ -28,7 +54,7 @@
             const data = doc.data();
             videoCount++;
 
-            // ১. ভিডিও কার্ড
+            // ভিডিও কার্ড
             const div = document.createElement('div');
             div.className = 'video-card';
             div.innerHTML = `
@@ -37,36 +63,34 @@
             `;
             videoList.appendChild(div);
 
-            // ২. প্রতি ২টা ভিডিওর পর অ্যাড
+            // ২টা ভিডিওর পর অ্যাড
             if (videoCount % 2 === 0) {
                 const adDiv = document.createElement('div');
                 adDiv.className = 'ad-slot';
-                const adId = 'ad-ready-' + videoCount;
+                const adId = 'ad-container-' + videoCount;
                 adDiv.innerHTML = `<span style="color:#666;font-size:10px;">ADVERTISEMENT</span><div id="${adId}"></div>`;
                 videoList.appendChild(adDiv);
 
-                // অ্যাড লোড করার বিশেষ টেকনিক
-                setTimeout(() => {
-                    const target = document.getElementById(adId);
-                    if (target) {
-                        // Clear previous if any
-                        target.innerHTML = '';
-                        
-                        // Config Script
-                        const conf = document.createElement('script');
-                        conf.type = 'text/javascript';
-                        conf.text = `atOptions = { 'key' : '6dd42e61fdb77100ae25a4653ee62d7f', 'format' : 'iframe', 'height' : 250, 'width' : 300, 'params' : {} };`;
-                        target.appendChild(conf);
-
-                        // Invoke Script
-                        const inv = document.createElement('script');
-                        inv.type = 'text/javascript';
-                        inv.src = 'https://www.highperformanceformat.com/6dd42e61fdb77100ae25a4653ee62d7f/invoke.js';
-                        target.appendChild(inv);
-                    }
-                }, 500); // ভিডিও লোড হওয়ার হাফ সেকেন্ড পর অ্যাড ট্রিগার হবে
+                // অ্যাড কোড ইনজেক্ট
+                try {
+                    const adTarget = adDiv.querySelector('#' + adId);
+                    
+                    const sOptions = document.createElement('script');
+                    sOptions.type = 'text/javascript';
+                    sOptions.text = `atOptions = { 'key' : '6dd42e61fdb77100ae25a4653ee62d7f', 'format' : 'iframe', 'height' : 250, 'width' : 300, 'params' : {} };`;
+                    
+                    const sInvoke = document.createElement('script');
+                    sInvoke.type = 'text/javascript';
+                    sInvoke.src = 'https://www.highperformanceformat.com/6dd42e61fdb77100ae25a4653ee62d7f/invoke.js';
+                    
+                    adTarget.appendChild(sOptions);
+                    adTarget.appendChild(sInvoke);
+                } catch (e) {
+                    console.log("Ad Error: ", e);
+                }
             }
         });
     });
-                            </script>
-                            
+</script>
+</body>
+</html>
