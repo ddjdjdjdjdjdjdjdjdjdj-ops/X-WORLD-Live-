@@ -1,62 +1,6 @@
-<!DOCTYPE html>
-<html lang="bn">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>X-WORLD Live-</title>
-    <style>
-        body { background: #000; color: #fff; font-family: sans-serif; margin: 0; padding: 10px; }
-        header { text-align: center; padding: 20px; border-bottom: 1px solid #333; }
-        h1 { color: red; margin: 0; }
-        #videoList { max-width: 600px; margin: 20px auto; }
-        
-        .video-card { position: relative; background: #111; border: 1px solid #333; border-radius: 10px; margin-bottom: 25px; overflow: hidden; }
-        video { width: 100%; display: block; background: #000; height: auto; max-height: 450px; }
-        .title { padding: 15px; font-size: 18px; font-weight: bold; }
-
-        /* Initial Overlay (Thumbnail dekhanor jonno) */
-        .thumb-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.1); z-index: 50; display: flex; 
-            align-items: center; justify-content: center; cursor: pointer;
-        }
-        .play-btn {
-            width: 70px; height: 70px; background: rgba(255,0,0,0.9);
-            border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            font-size: 30px; color: #fff; box-shadow: 0 0 20px rgba(0,0,0,0.5);
-        }
-
-        /* iframe Ad Layer (Click korle asbe) */
-        .ad-container {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; z-index: 100; display: none; /* শুরুতে লুকানো */
-            flex-direction: column;
-        }
-        iframe { width: 100%; height: 85%; border: none; background: #222; }
-
-        .skip-section {
-            width: 100%; height: 15%; background: #111;
-            display: flex; align-items: center; justify-content: flex-end; padding-right: 15px;
-        }
-
-        .timer-text { color: #ccc; font-size: 14px; margin-right: 10px; }
-
-        .skip-btn {
-            padding: 8px 20px; background: #333; color: #888;
-            border: 1px solid #444; border-radius: 2px; font-size: 14px;
-            cursor: not-allowed;
-        }
-        .skip-btn.active { background: #fff; color: #000; cursor: pointer; border-color: #fff; font-weight: bold; }
-    </style>
-</head>
-<body>
-
-<header><h1>X-WORLD Live-</h1></header>
-<div id="videoList"></div>
-
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, collection, doc, getDoc, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyBWhYvIKGHfDO4NrH0G5N692FljzD_wmZc",
@@ -71,68 +15,89 @@
     const db = getFirestore(app);
     const videoList = document.getElementById('videoList');
 
-    onSnapshot(query(collection(db, "userVideos"), orderBy("createdAt", "desc")), (snapshot) => {
-        videoList.innerHTML = ""; 
-        snapshot.forEach((doc) => {
-            const data = doc.data();
-            const card = document.createElement('div');
-            card.className = 'video-card';
-            card.innerHTML = `
-                <div style="position:relative;">
-                    <video preload="metadata" playsinline>
-                        <source src="${data.url}#t=0.5" type="video/mp4">
-                    </video>
-                    
-                    <div class="thumb-overlay">
-                        <div class="play-btn">▶</div>
-                    </div>
+    // ১. ইউআরএল থেকে আইডি চেক করা
+    const urlParams = new URLSearchParams(window.location.search);
+    const videoId = urlParams.get('id');
 
-                    <div class="ad-container">
-                        <iframe src="${data.adLink}"></iframe>
-                        <div class="skip-section">
-                            <span class="timer-text">Wait <span class="sec">5</span>s</span>
-                            <button class="skip-btn">Skip Ad</button>
-                        </div>
+    if (videoId) {
+        // ২. যদি আইডি থাকে, শুধু সেই ভিডিওটি ফায়ারবেস থেকে আনা
+        const docRef = doc(db, "userVideos", videoId);
+        getDoc(docRef).then((docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                renderVideoCard(data);
+            } else {
+                videoList.innerHTML = "<h2 style='text-align:center; color:gray;'>ভিডিওটি খুঁজে পাওয়া যায়নি!</h2>";
+            }
+        }).catch((error) => {
+            console.error("Error getting document:", error);
+        });
+    } else {
+        // ৩. যদি আইডি না থাকে, তবে খালি পেজ দেখাবে বা মেসেজ দেবে
+        videoList.innerHTML = "<h2 style='text-align:center; color:gray;'>অনুগ্রহ করে সঠিক লিংকে ক্লিক করুন।</h2>";
+    }
+
+    // ভিডিও কার্ড রেন্ডার করার ফাংশন
+    function renderVideoCard(data) {
+        const card = document.createElement('div');
+        card.className = 'video-card';
+        card.innerHTML = `
+            <div style="position:relative;">
+                <video preload="metadata" playsinline>
+                    <source src="${data.url}#t=0.5" type="video/mp4">
+                </video>
+                
+                <div class="thumb-overlay">
+                    <div class="play-btn">▶</div>
+                </div>
+
+                <div class="ad-container">
+                    <iframe src="${data.adLink}"></iframe>
+                    <div class="skip-section">
+                        <span class="timer-text">Wait <span class="sec">5</span>s</span>
+                        <button class="skip-btn">Skip Ad</button>
                     </div>
                 </div>
-                <div class="title">${data.title}</div>
-            `;
-            videoList.appendChild(card);
+            </div>
+            <div class="title">${data.title}</div>
+        `;
+        videoList.appendChild(card);
 
-            const video = card.querySelector('video');
-            const thumbOverlay = card.querySelector('.thumb-overlay');
-            const adContainer = card.querySelector('.ad-container');
-            const skipBtn = card.querySelector('.skip-btn');
-            const secSpan = card.querySelector('.sec');
-            const timerText = card.querySelector('.timer-text');
+        // আপনার আগের প্লে এবং স্কিপ লজিক এখানে থাকবে
+        setupVideoLogic(card);
+    }
 
-            // Click on Thumbnail
-            thumbOverlay.onclick = function() {
-                thumbOverlay.style.display = 'none'; // Thumbnail shore jabe
-                adContainer.style.display = 'flex';   // Ad asbe
-                
-                // 5 Second Timer Start
-                let count = 5;
-                const timer = setInterval(() => {
-                    count--;
-                    secSpan.innerText = count;
-                    if (count <= 0) {
-                        clearInterval(timer);
-                        timerText.style.display = 'none';
-                        skipBtn.innerText = "Skip Ad ❯";
-                        skipBtn.classList.add('active');
-                        
-                        skipBtn.onclick = (e) => {
-                            e.stopPropagation();
-                            adContainer.remove(); // Ad shore jabe
-                            video.controls = true; // Controls asbe
-                            video.play();         // Video cholbe
-                        };
-                    }
-                }, 1000);
-            };
-        });
-    });
-</script>
-</body>
-</html>
+    function setupVideoLogic(card) {
+        const video = card.querySelector('video');
+        const thumbOverlay = card.querySelector('.thumb-overlay');
+        const adContainer = card.querySelector('.ad-container');
+        const skipBtn = card.querySelector('.skip-btn');
+        const secSpan = card.querySelector('.sec');
+        const timerText = card.querySelector('.timer-text');
+
+        thumbOverlay.onclick = function() {
+            thumbOverlay.style.display = 'none';
+            adContainer.style.display = 'flex';
+            
+            let count = 5;
+            const timer = setInterval(() => {
+                count--;
+                secSpan.innerText = count;
+                if (count <= 0) {
+                    clearInterval(timer);
+                    timerText.style.display = 'none';
+                    skipBtn.innerText = "Skip Ad ❯";
+                    skipBtn.classList.add('active');
+                    
+                    skipBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        adContainer.remove();
+                        video.controls = true;
+                        video.play();
+                    };
+                }
+            }, 1000);
+        };
+    }
+                                             </script>
+                                             
