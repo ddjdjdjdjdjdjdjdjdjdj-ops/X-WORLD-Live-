@@ -1,68 +1,50 @@
-<!DOCTYPE html>
-<html lang="bn">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>X-WORLD Admin - Upload Video</title>
-    <style>
-        body { background: #111; color: #fff; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .upload-box { background: #222; padding: 30px; border-radius: 15px; width: 90%; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 5px; border: 1px solid #444; background: #333; color: #fff; box-sizing: border-box; }
-        button { width: 100%; padding: 15px; background: red; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; transition: 0.3s; }
-        button:hover { background: darkred; }
-        h2 { text-align: center; color: red; margin-bottom: 20px; }
-    </style>
-</head>
-<body>
+import { collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-<div class="upload-box">
-    <h2>Upload New Video</h2>
-    <input type="text" id="vTitle" placeholder="ভিডিওর টাইটেল লিখুন">
-    <input type="text" id="vUrl" placeholder="ভিডিও ডাইরেক্ট লিঙ্ক (MP4)">
-    <input type="text" id="adLink" placeholder="এই ভিডিওর Smart Link (Adsterra)">
-    <button id="uploadBtn">পাবলিশ করুন</button>
-</div>
+// ভিডিও আপলোড ফাংশন
+async function uploadVideo() {
+    const title = document.getElementById('title').value;
+    const url = document.getElementById('url').value;
+    const adLink = document.getElementById('adLink').value;
 
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    try {
+        // ফায়ারবেসে ডাটা সেভ করা
+        const docRef = await addDoc(collection(db, "userVideos"), {
+            title: title,
+            url: url,
+            adLink: adLink,
+            createdAt: serverTimestamp()
+        });
 
-    const firebaseConfig = {
-        apiKey: "AIzaSyBWhYvIKGHfDO4NrH0G5N692FljzD_wmZc",
-        authDomain: "misti-am.firebaseapp.com",
-        projectId: "misti-am",
-        storageBucket: "misti-am.firebasestorage.app",
-        messagingSenderId: "335857181187",
-        appId: "1:335857181187:web:eee24712600f7018262436"
-    };
+        // ১. আপনার মেইন সাইটের ইউআরএল (GitHub Pages Link)
+        const siteUrl = "https://djdj-ops.github.io/"; 
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+        // ২. অটোমেটিক শেয়ারিং লিংক তৈরি
+        const shareLink = `${siteUrl}?id=${docRef.id}`;
 
-    document.getElementById('uploadBtn').onclick = async () => {
-        const title = document.getElementById('vTitle').value;
-        const url = document.getElementById('vUrl').value;
-        const adLink = document.getElementById('adLink').value;
+        // ৩. রেজাল্ট দেখানোর জন্য একটি এলার্ট বা ইনপুট বক্সে লিংকটি দেখানো
+        alert("ভিডিও আপলোড সফল হয়েছে!");
+        
+        // আমি সাজেস্ট করি একটি ইনপুট বক্সে লিংকটি দেখানোর জন্য যাতে আপনি কপি করতে পারেন
+        document.getElementById('videoList').innerHTML = `
+            <div style="background: #222; padding: 20px; border-radius: 10px; text-align: center; margin-top: 20px;">
+                <p style="color: #00ff00;">আপনার শেয়ারিং লিংক তৈরি:</p>
+                <input type="text" value="${shareLink}" id="generatedLink" readonly 
+                       style="width: 100%; padding: 10px; background: #000; color: #fff; border: 1px solid #444;">
+                <br><br>
+                <button onclick="copyLink()" style="padding: 10px 20px; cursor: pointer; background: red; color: white; border: none;">Copy Link</button>
+            </div>
+        `;
 
-        if (title && url && adLink) {
-            try {
-                await addDoc(collection(db, "userVideos"), {
-                    title: title,
-                    url: url,
-                    adLink: adLink, // প্রতিটি ভিডিওর আলাদা অ্যাড লিঙ্ক সেভ হচ্ছে
-                    createdAt: serverTimestamp()
-                });
-                alert("সফলভাবে আপলোড হয়েছে!");
-                document.getElementById('vTitle').value = "";
-                document.getElementById('vUrl').value = "";
-                document.getElementById('adLink').value = "";
-            } catch (e) {
-                alert("Error: " + e.message);
-            }
-        } else {
-            alert("সবগুলো বক্স পূরণ করুন!");
-        }
-    };
-</script>
-</body>
-</html>
+    } catch (e) {
+        console.error("Error adding document: ", e);
+        alert("আপলোড করতে সমস্যা হয়েছে!");
+    }
+}
+
+// কপি করার ফাংশন
+window.copyLink = function() {
+    const copyText = document.getElementById("generatedLink");
+    copyText.select();
+    document.execCommand("copy");
+    alert("লিংক কপি হয়েছে!");
+}
