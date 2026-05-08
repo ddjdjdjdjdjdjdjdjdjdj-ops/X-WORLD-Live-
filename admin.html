@@ -1,50 +1,129 @@
-import { collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-// ভিডিও আপলোড ফাংশন
-async function uploadVideo() {
-    const title = document.getElementById('title').value;
-    const url = document.getElementById('url').value;
-    const adLink = document.getElementById('adLink').value;
-
-    try {
-        // ফায়ারবেসে ডাটা সেভ করা
-        const docRef = await addDoc(collection(db, "userVideos"), {
-            title: title,
-            url: url,
-            adLink: adLink,
-            createdAt: serverTimestamp()
-        });
-
-        // ১. আপনার মেইন সাইটের ইউআরএল (GitHub Pages Link)
-        const siteUrl = "https://djdj-ops.github.io/"; 
-
-        // ২. অটোমেটিক শেয়ারিং লিংক তৈরি
-        const shareLink = `${siteUrl}?id=${docRef.id}`;
-
-        // ৩. রেজাল্ট দেখানোর জন্য একটি এলার্ট বা ইনপুট বক্সে লিংকটি দেখানো
-        alert("ভিডিও আপলোড সফল হয়েছে!");
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>X-WORLD Admin Panel</title>
+    <style>
+        body { background: #0b0b0b; color: #fff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .upload-container { background: #1a1a1a; padding: 30px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 100%; max-width: 400px; border: 1px solid #333; }
+        h2 { color: #ff0000; text-align: center; margin-bottom: 25px; }
+        input { width: 100%; padding: 12px; margin-bottom: 15px; background: #222; border: 1px solid #444; border-radius: 8px; color: #fff; box-sizing: border-box; outline: none; }
+        input:focus { border-color: #ff0000; }
+        button { width: 100%; padding: 12px; background: #ff0000; color: #fff; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 16px; transition: 0.3s; }
+        button:hover { background: #cc0000; }
         
-        // আমি সাজেস্ট করি একটি ইনপুট বক্সে লিংকটি দেখানোর জন্য যাতে আপনি কপি করতে পারেন
-        document.getElementById('videoList').innerHTML = `
-            <div style="background: #222; padding: 20px; border-radius: 10px; text-align: center; margin-top: 20px;">
-                <p style="color: #00ff00;">আপনার শেয়ারিং লিংক তৈরি:</p>
-                <input type="text" value="${shareLink}" id="generatedLink" readonly 
-                       style="width: 100%; padding: 10px; background: #000; color: #fff; border: 1px solid #444;">
-                <br><br>
-                <button onclick="copyLink()" style="padding: 10px 20px; cursor: pointer; background: red; color: white; border: none;">Copy Link</button>
+        /* Result Area */
+        #resultArea { margin-top: 20px; display: none; }
+        .link-box { background: #000; padding: 15px; border-radius: 8px; border: 1px dashed #555; text-align: center; }
+        .link-box p { color: #00ff00; margin: 0 0 10px 0; font-size: 14px; }
+        .copy-group { display: flex; gap: 5px; }
+        #generatedLink { flex-grow: 1; background: #111; color: #ccc; border: 1px solid #333; padding: 8px; font-size: 12px; border-radius: 4px; }
+        .btn-copy { width: auto; padding: 8px 15px; background: #444; font-size: 12px; }
+    </style>
+</head>
+<body>
+
+<div class="upload-container">
+    <h2>Upload New Video</h2>
+    
+    <input type="text" id="title" placeholder="ভিডিওর টাইটেল লিখুন" required>
+    <input type="url" id="url" placeholder="ভিডিও ডাইরেক্ট লিঙ্ক (MP4)" required>
+    <input type="url" id="adLink" placeholder="Monetag/Adsterra Smart Link" required>
+    
+    <button id="uploadBtn">পাবলিশ করুন</button>
+
+    <div id="resultArea">
+        <div class="link-box">
+            <p>আপনার শেয়ারিং লিংক তৈরি:</p>
+            <div class="copy-group">
+                <input type="text" id="generatedLink" readonly>
+                <button class="btn-copy" id="copyBtn">Copy</button>
             </div>
-        `;
+        </div>
+    </div>
+</div>
 
-    } catch (e) {
-        console.error("Error adding document: ", e);
-        alert("আপলোড করতে সমস্যা হয়েছে!");
-    }
-}
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-// কপি করার ফাংশন
-window.copyLink = function() {
-    const copyText = document.getElementById("generatedLink");
-    copyText.select();
-    document.execCommand("copy");
-    alert("লিংক কপি হয়েছে!");
-}
+    // আপনার ফায়ারবেস কনফিগারেশন
+    const firebaseConfig = {
+        apiKey: "AIzaSyBWhYvIKGHfDO4NrH0G5N692FljzD_wmZc",
+        authDomain: "misti-am.firebaseapp.com",
+        projectId: "misti-am",
+        storageBucket: "misti-am.firebasestorage.app",
+        messagingSenderId: "335857181187",
+        appId: "1:335857181187:web:eee24712600f7018262436"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const uploadBtn = document.getElementById('uploadBtn');
+    const resultArea = document.getElementById('resultArea');
+    const generatedLink = document.getElementById('generatedLink');
+    const copyBtn = document.getElementById('copyBtn');
+
+    // ভিডিও আপলোড ফাংশন
+    uploadBtn.onclick = async () => {
+        const title = document.getElementById('title').value;
+        const url = document.getElementById('url').value;
+        const adLink = document.getElementById('adLink').value;
+
+        if(!title || !url || !adLink) {
+            alert("সবগুলো ঘর পূরণ করুন!");
+            return;
+        }
+
+        uploadBtn.innerText = "আপলোড হচ্ছে...";
+        uploadBtn.disabled = true;
+
+        try {
+            // ফায়ারবেসে ডাটা পাঠানো
+            const docRef = await addDoc(collection(db, "userVideos"), {
+                title: title,
+                url: url,
+                adLink: adLink,
+                createdAt: serverTimestamp()
+            });
+
+            // লিংক জেনারেট করা (আপনার মেইন ইউআরএল)
+            const siteUrl = "https://djdj-ops.github.io/"; 
+            const shareLink = siteUrl + "?id=" + docRef.id;
+
+            // রেজাল্ট দেখানো
+            generatedLink.value = shareLink;
+            resultArea.style.display = "block";
+            uploadBtn.innerText = "পাবলিশ করুন";
+            uploadBtn.disabled = false;
+            
+            alert("সফলভাবে পাবলিশ হয়েছে!");
+
+        } catch (e) {
+            console.error("Error: ", e);
+            alert("কিছু একটা ভুল হয়েছে! আবার চেষ্টা করুন।");
+            uploadBtn.innerText = "পাবলিশ করুন";
+            uploadBtn.disabled = false;
+        }
+    };
+
+    // কপি বাটন ফাংশন
+    copyBtn.onclick = () => {
+        generatedLink.select();
+        document.execCommand("copy");
+        copyBtn.innerText = "Copied!";
+        copyBtn.style.background = "#00ff00";
+        copyBtn.style.color = "#000";
+        
+        setTimeout(() => {
+            copyBtn.innerText = "Copy";
+            copyBtn.style.background = "#444";
+            copyBtn.style.color = "#fff";
+        }, 2000);
+    };
+</script>
+
+</body>
+</html>
