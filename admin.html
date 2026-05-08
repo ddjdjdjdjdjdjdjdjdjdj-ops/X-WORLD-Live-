@@ -3,52 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>X-WORLD Admin Panel</title>
+    <title>X-WORLD Live</title>
     <style>
-        body { background: #0b0b0b; color: #fff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .upload-container { background: #1a1a1a; padding: 30px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 100%; max-width: 400px; border: 1px solid #333; }
-        h2 { color: #ff0000; text-align: center; margin-bottom: 25px; }
-        input { width: 100%; padding: 12px; margin-bottom: 15px; background: #222; border: 1px solid #444; border-radius: 8px; color: #fff; box-sizing: border-box; outline: none; }
-        input:focus { border-color: #ff0000; }
-        button { width: 100%; padding: 12px; background: #ff0000; color: #fff; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 16px; transition: 0.3s; }
-        button:hover { background: #cc0000; }
-        
-        /* Result Area */
-        #resultArea { margin-top: 20px; display: none; }
-        .link-box { background: #000; padding: 15px; border-radius: 8px; border: 1px dashed #555; text-align: center; }
-        .link-box p { color: #00ff00; margin: 0 0 10px 0; font-size: 14px; }
-        .copy-group { display: flex; gap: 5px; }
-        #generatedLink { flex-grow: 1; background: #111; color: #ccc; border: 1px solid #333; padding: 8px; font-size: 12px; border-radius: 4px; }
-        .btn-copy { width: auto; padding: 8px 15px; background: #444; font-size: 12px; }
+        body { background: #000; color: #fff; font-family: sans-serif; margin: 0; padding: 10px; }
+        header { text-align: center; padding: 20px; border-bottom: 1px solid #333; }
+        h1 { color: red; margin: 0; }
+        #videoContainer { max-width: 600px; margin: 20px auto; }
+        .video-card { position: relative; background: #111; border: 1px solid #333; border-radius: 10px; overflow: hidden; }
+        video { width: 100%; display: block; height: auto; }
+        .title { padding: 15px; font-size: 18px; font-weight: bold; }
+        .thumb-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 50; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .play-btn { width: 70px; height: 70px; background: red; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 30px; color: #fff; }
+        .ad-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 100; display: none; flex-direction: column; }
+        iframe { width: 100%; height: 85%; border: none; }
+        .skip-section { width: 100%; height: 15%; background: #111; display: flex; align-items: center; justify-content: flex-end; padding-right: 15px; box-sizing: border-box; }
+        .skip-btn { padding: 8px 15px; background: #333; color: #888; border: 1px solid #444; border-radius: 4px; cursor: not-allowed; }
+        .skip-btn.active { background: #fff; color: #000; cursor: pointer; }
     </style>
 </head>
 <body>
 
-<div class="upload-container">
-    <h2>Upload New Video</h2>
-    
-    <input type="text" id="title" placeholder="ভিডিওর টাইটেল লিখুন" required>
-    <input type="url" id="url" placeholder="ভিডিও ডাইরেক্ট লিঙ্ক (MP4)" required>
-    <input type="url" id="adLink" placeholder="Monetag/Adsterra Smart Link" required>
-    
-    <button id="uploadBtn">পাবলিশ করুন</button>
-
-    <div id="resultArea">
-        <div class="link-box">
-            <p>আপনার শেয়ারিং লিংক তৈরি:</p>
-            <div class="copy-group">
-                <input type="text" id="generatedLink" readonly>
-                <button class="btn-copy" id="copyBtn">Copy</button>
-            </div>
-        </div>
-    </div>
-</div>
+<header><h1>X-WORLD Live-</h1></header>
+<div id="videoContainer"></div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    // আপনার ফায়ারবেস কনফিগারেশন
     const firebaseConfig = {
         apiKey: "AIzaSyBWhYvIKGHfDO4NrH0G5N692FljzD_wmZc",
         authDomain: "misti-am.firebaseapp.com",
@@ -60,70 +41,63 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
+    const container = document.getElementById('videoContainer');
 
-    const uploadBtn = document.getElementById('uploadBtn');
-    const resultArea = document.getElementById('resultArea');
-    const generatedLink = document.getElementById('generatedLink');
-    const copyBtn = document.getElementById('copyBtn');
+    const urlParams = new URLSearchParams(window.location.search);
+    const videoId = urlParams.get('id');
 
-    // ভিডিও আপলোড ফাংশন
-    uploadBtn.onclick = async () => {
-        const title = document.getElementById('title').value;
-        const url = document.getElementById('url').value;
-        const adLink = document.getElementById('adLink').value;
+    if (videoId) {
+        const docRef = doc(db, "userVideos", videoId);
+        getDoc(docRef).then((s) => {
+            if (s.exists()) {
+                const d = s.data();
+                container.innerHTML = `
+                    <div class="video-card">
+                        <div style="position:relative;">
+                            <video id="myVid" playsinline><source src="${d.url}"></video>
+                            <div class="thumb-overlay" id="tOver"><div class="play-btn">▶</div></div>
+                            <div class="ad-container" id="adBox">
+                                <iframe src="${d.adLink}"></iframe>
+                                <div class="skip-section">
+                                    <span id="timer" style="margin-right:10px;">Wait 5s</span>
+                                    <button class="skip-btn" id="sBtn">Skip Ad</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="title">${d.title}</div>
+                    </div>`;
+                
+                const tOver = document.getElementById('tOver');
+                const adBox = document.getElementById('adBox');
+                const sBtn = document.getElementById('sBtn');
+                const myVid = document.getElementById('myVid');
+                const timer = document.getElementById('timer');
 
-        if(!title || !url || !adLink) {
-            alert("সবগুলো ঘর পূরণ করুন!");
-            return;
-        }
-
-        uploadBtn.innerText = "আপলোড হচ্ছে...";
-        uploadBtn.disabled = true;
-
-        try {
-            // ফায়ারবেসে ডাটা পাঠানো
-            const docRef = await addDoc(collection(db, "userVideos"), {
-                title: title,
-                url: url,
-                adLink: adLink,
-                createdAt: serverTimestamp()
-            });
-
-            // লিংক জেনারেট করা (আপনার মেইন ইউআরএল)
-            const siteUrl = "https://djdj-ops.github.io/"; 
-            const shareLink = siteUrl + "?id=" + docRef.id;
-
-            // রেজাল্ট দেখানো
-            generatedLink.value = shareLink;
-            resultArea.style.display = "block";
-            uploadBtn.innerText = "পাবলিশ করুন";
-            uploadBtn.disabled = false;
-            
-            alert("সফলভাবে পাবলিশ হয়েছে!");
-
-        } catch (e) {
-            console.error("Error: ", e);
-            alert("কিছু একটা ভুল হয়েছে! আবার চেষ্টা করুন।");
-            uploadBtn.innerText = "পাবলিশ করুন";
-            uploadBtn.disabled = false;
-        }
-    };
-
-    // কপি বাটন ফাংশন
-    copyBtn.onclick = () => {
-        generatedLink.select();
-        document.execCommand("copy");
-        copyBtn.innerText = "Copied!";
-        copyBtn.style.background = "#00ff00";
-        copyBtn.style.color = "#000";
-        
-        setTimeout(() => {
-            copyBtn.innerText = "Copy";
-            copyBtn.style.background = "#444";
-            copyBtn.style.color = "#fff";
-        }, 2000);
-    };
+                tOver.onclick = () => {
+                    tOver.style.display = 'none';
+                    adBox.style.display = 'flex';
+                    let c = 5;
+                    const it = setInterval(() => {
+                        c--;
+                        timer.innerText = "Wait " + c + "s";
+                        if(c <= 0) {
+                            clearInterval(it);
+                            timer.style.display = 'none';
+                            sBtn.innerText = "Skip Ad ❯";
+                            sBtn.classList.add('active');
+                            sBtn.onclick = () => {
+                                adBox.remove();
+                                myVid.controls = true;
+                                myVid.play();
+                            };
+                        }
+                    }, 1000);
+                };
+            } else { container.innerHTML = "<p>Video Not Found!</p>"; }
+        });
+    } else {
+        container.innerHTML = "<h3 style='text-align:center;'>Welcome! Please use a direct video link.</h3>";
+    }
 </script>
-
 </body>
 </html>
