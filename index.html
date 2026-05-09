@@ -12,12 +12,11 @@
         .v-card { position: relative; background: #111; border-radius: 10px; overflow: hidden; border: 1px solid #333; }
         video { width: 100%; display: block; }
         .title { padding: 15px; font-size: 18px; font-weight: bold; text-align: center; }
-        .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 10; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-        .play { width: 60px; height: 60px; background: red; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 25px; }
-        .ad-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 20; display: none; flex-direction: column; }
-        iframe { width: 100%; height: 80%; border: none; }
-        .skip-bar { height: 20%; background: #111; display: flex; align-items: center; justify-content: flex-end; padding-right: 20px; }
-        .s-btn { padding: 10px 20px; background: #333; color: #888; border: none; border-radius: 5px; cursor: not-allowed; }
+        .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; }
+        .play { width: 65px; height: 65px; background: red; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 25px; margin-bottom: 10px; box-shadow: 0 0 15px rgba(255,0,0,0.4); }
+        .ad-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 20; display: none; flex-direction: column; align-items: center; justify-content: center; }
+        .skip-bar { width: 100%; text-align: center; }
+        .s-btn { padding: 12px 25px; background: #333; color: #888; border: none; border-radius: 5px; cursor: not-allowed; font-size: 16px; }
         .s-btn.active { background: #fff; color: #000; cursor: pointer; font-weight: bold; }
     </style>
 </head>
@@ -56,11 +55,13 @@
                         <div class="v-card">
                             <div style="position:relative;">
                                 <video id="vid" playsinline><source src="${d.url}"></video>
-                                <div class="overlay" id="ovl"><div class="play">▶</div></div>
+                                <div class="overlay" id="ovl">
+                                    <div class="play">▶</div>
+                                    <small>ভিডিও দেখতে ক্লিক করুন</small>
+                                </div>
                                 <div class="ad-layer" id="adl">
-                                    <iframe src="${d.adLink}"></iframe>
                                     <div class="skip-bar">
-                                        <span id="tmr" style="margin-right:10px;">Wait 5s</span>
+                                        <p id="tmr" style="color:yellow; margin-bottom:15px;">অ্যাড লোড হচ্ছে, অপেক্ষা করুন: 5s</p>
                                         <button class="s-btn" id="skp">Skip Ad</button>
                                     </div>
                                 </div>
@@ -75,12 +76,16 @@
                     const tmr = document.getElementById('tmr');
 
                     ovl.onclick = () => {
+                        // ১. প্লে বাটনে ক্লিক করলে নতুন ট্যাবে অ্যাড ওপেন হবে
+                        window.open(d.adLink, "_blank");
+
+                        // ২. মূল পেজে টাইমার শুরু হবে
                         ovl.style.display = 'none';
                         adl.style.display = 'flex';
                         let time = 5;
                         const interval = setInterval(() => {
                             time--;
-                            tmr.innerText = "Wait " + time + "s";
+                            tmr.innerText = "অপেক্ষা করুন: " + time + "s";
                             if(time <= 0) {
                                 clearInterval(interval);
                                 tmr.style.display = 'none';
