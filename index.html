@@ -5,25 +5,56 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>X-WORLD Live</title>
     <style>
-        body { background: #000; color: #fff; font-family: sans-serif; margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; }
+        body { background: #000; color: #fff; font-family: sans-serif; margin: 0; padding: 0; overflow-x: hidden; }
+        #main-content { display: flex; flex-direction: column; align-items: center; padding: 10px; }
         header { text-align: center; padding: 20px; width: 100%; border-bottom: 1px solid #333; }
         h1 { color: red; margin: 0; }
-        #vBox { width: 100%; max-width: 500px; margin-top: 20px; }
-        .v-card { position: relative; background: #111; border-radius: 10px; overflow: hidden; border: 1px solid #333; }
+        
+        .v-card { width: 100%; max-width: 500px; margin-top: 20px; background: #111; border-radius: 10px; overflow: hidden; border: 1px solid #333; position: relative; }
         video { width: 100%; display: block; }
         .title { padding: 15px; font-size: 18px; font-weight: bold; text-align: center; }
-        .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; }
-        .play { width: 65px; height: 65px; background: red; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 25px; margin-bottom: 10px; box-shadow: 0 0 15px rgba(255,0,0,0.4); }
-        .ad-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 20; display: none; flex-direction: column; align-items: center; justify-content: center; }
-        .skip-bar { width: 100%; text-align: center; }
-        .s-btn { padding: 12px 25px; background: #333; color: #888; border: none; border-radius: 5px; cursor: not-allowed; font-size: 16px; }
-        .s-btn.active { background: #fff; color: #000; cursor: pointer; font-weight: bold; }
+
+        /* Full Screen Ad Overlay */
+        #ad-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 9999; display: none; flex-direction: column;
+        }
+        #ad-frame { width: 100%; height: 88%; border: none; background: #fff; }
+        
+        /* Bottom Skip Bar */
+        #skip-bar {
+            height: 12%; background: #111; display: flex; align-items: center; 
+            justify-content: space-between; padding: 0 20px; border-top: 1px solid #333;
+        }
+        .tmr-text { color: yellow; font-size: 15px; }
+        .s-btn { 
+            padding: 10px 20px; background: #333; color: #888; 
+            border: none; border-radius: 5px; cursor: not-allowed; font-weight: bold;
+        }
+        .s-btn.active { background: #fff; color: #000; cursor: pointer; }
+        
+        /* Play Overlay */
+        .play-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer;
+        }
+        .play-icon { width: 65px; height: 65px; background: red; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 25px; margin-bottom: 10px; }
     </style>
 </head>
 <body>
 
-<header><h1>X-WORLD Live</h1></header>
-<div id="vBox">লোডিং হচ্ছে...</div>
+<div id="ad-screen">
+    <iframe id="ad-frame" src=""></iframe>
+    <div id="skip-bar">
+        <div id="tmr-txt" class="tmr-text">Wait 5s...</div>
+        <button id="skp-btn" class="s-btn">Skip Ad</button>
+    </div>
+</div>
+
+<div id="main-content">
+    <header><h1>X-WORLD Live</h1></header>
+    <div id="vBox">Loading...</div>
+</div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -54,57 +85,52 @@
                     vBox.innerHTML = `
                         <div class="v-card">
                             <div style="position:relative;">
-                                <video id="vid" playsinline><source src="${d.url}"></video>
-                                <div class="overlay" id="ovl">
-                                    <div class="play">▶</div>
+                                <video id="main-vid" playsinline src="${d.url}"></video>
+                                <div class="play-overlay" id="start-play">
+                                    <div class="play-icon">▶</div>
                                     <small>ভিডিও দেখতে ক্লিক করুন</small>
-                                </div>
-                                <div class="ad-layer" id="adl">
-                                    <div class="skip-bar">
-                                        <p id="tmr" style="color:yellow; margin-bottom:15px;">অ্যাড লোড হচ্ছে, অপেক্ষা করুন: 5s</p>
-                                        <button class="s-btn" id="skp">Skip Ad</button>
-                                    </div>
                                 </div>
                             </div>
                             <div class="title">${d.title}</div>
                         </div>`;
                     
-                    const ovl = document.getElementById('ovl');
-                    const adl = document.getElementById('adl');
-                    const skp = document.getElementById('skp');
-                    const vid = document.getElementById('vid');
-                    const tmr = document.getElementById('tmr');
+                    const startPlay = document.getElementById('start-play');
+                    const adScreen = document.getElementById('ad-screen');
+                    const adFrame = document.getElementById('ad-frame');
+                    const tmrTxt = document.getElementById('tmr-txt');
+                    const skpBtn = document.getElementById('skp-btn');
+                    const mainVid = document.getElementById('main-vid');
 
-                    ovl.onclick = () => {
-                        // ১. প্লে বাটনে ক্লিক করলে নতুন ট্যাবে অ্যাড ওপেন হবে
-                        window.open(d.adLink, "_blank");
-
-                        // ২. মূল পেজে টাইমার শুরু হবে
-                        ovl.style.display = 'none';
-                        adl.style.display = 'flex';
-                        let time = 5;
-                        const interval = setInterval(() => {
-                            time--;
-                            tmr.innerText = "অপেক্ষা করুন: " + time + "s";
-                            if(time <= 0) {
-                                clearInterval(interval);
-                                tmr.style.display = 'none';
-                                skp.innerText = "Skip Ad ❯";
-                                skp.classList.add('active');
-                                skp.onclick = () => {
-                                    adl.remove();
-                                    vid.controls = true;
-                                    vid.play();
+                    startPlay.onclick = () => {
+                        // 1. Ad screen show kora
+                        adFrame.src = d.adLink;
+                        adScreen.style.display = 'flex';
+                        
+                        // 2. Timer shuru
+                        let timeLeft = 5;
+                        const countdown = setInterval(() => {
+                            timeLeft--;
+                            tmrTxt.innerText = "Wait " + timeLeft + "s...";
+                            
+                            if(timeLeft <= 0) {
+                                clearInterval(countdown);
+                                tmrTxt.style.visibility = 'hidden';
+                                skpBtn.innerText = "Skip Ad ❯";
+                                skpBtn.classList.add('active');
+                                
+                                // 3. Skip button e click korle video play hobe
+                                skpBtn.onclick = () => {
+                                    adScreen.remove(); // Ad layer delete kore dewa
+                                    mainVid.controls = true;
+                                    mainVid.play();
                                 };
                             }
                         }, 1000);
                     };
-                } else { vBox.innerHTML = "ভিডিওটি খুঁজে পাওয়া যায়নি!"; }
+                }
             } catch (e) { vBox.innerHTML = "Error: " + e.message; }
         }
         load();
-    } else {
-        vBox.innerHTML = "সঠিক লিঙ্কে ক্লিক করুন।";
     }
 </script>
 </body>
