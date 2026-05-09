@@ -37,6 +37,7 @@
         .play-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.6); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer;
+            z-index: 10;
         }
         .play-icon { width: 65px; height: 65px; background: red; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 25px; margin-bottom: 10px; }
     </style>
@@ -46,7 +47,7 @@
 <div id="ad-screen">
     <iframe id="ad-frame" src=""></iframe>
     <div id="skip-bar">
-        <div id="tmr-txt" class="tmr-text">Wait 5s...</div>
+        <div id="tmr-txt" class="tmr-text">Wait 8s...</div>
         <button id="skp-btn" class="s-btn">Skip Ad</button>
     </div>
 </div>
@@ -102,12 +103,11 @@
                     const mainVid = document.getElementById('main-vid');
 
                     startPlay.onclick = () => {
-                        // 1. Ad screen show kora
                         adFrame.src = d.adLink;
                         adScreen.style.display = 'flex';
                         
-                        // 2. Timer shuru
-                        let timeLeft = 5;
+                        // Timer 8 second set kora hoyeche
+                        let timeLeft = 8;
                         const countdown = setInterval(() => {
                             timeLeft--;
                             tmrTxt.innerText = "Wait " + timeLeft + "s...";
@@ -118,9 +118,9 @@
                                 skpBtn.innerText = "Skip Ad ❯";
                                 skpBtn.classList.add('active');
                                 
-                                // 3. Skip button e click korle video play hobe
                                 skpBtn.onclick = () => {
-                                    adScreen.remove(); // Ad layer delete kore dewa
+                                    adScreen.style.display = 'none'; // Ad screen hide kora
+                                    startPlay.style.display = 'none'; // Video-r upore thaka Red Play button overlay sorano
                                     mainVid.controls = true;
                                     mainVid.play();
                                 };
