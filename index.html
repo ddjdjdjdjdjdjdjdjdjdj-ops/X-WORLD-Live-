@@ -1,6 +1,34 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>X-WORLD Live</title>
+    <style>
+        body { background: #000; color: #fff; font-family: sans-serif; margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; }
+        header { text-align: center; padding: 20px; width: 100%; border-bottom: 1px solid #333; }
+        h1 { color: red; margin: 0; }
+        #vBox { width: 100%; max-width: 500px; margin-top: 20px; }
+        .v-card { position: relative; background: #111; border-radius: 10px; overflow: hidden; border: 1px solid #333; }
+        video { width: 100%; display: block; }
+        .title { padding: 15px; font-size: 18px; font-weight: bold; text-align: center; }
+        .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 10; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .play { width: 60px; height: 60px; background: red; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 25px; }
+        .ad-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 20; display: none; flex-direction: column; }
+        iframe { width: 100%; height: 80%; border: none; }
+        .skip-bar { height: 20%; background: #111; display: flex; align-items: center; justify-content: flex-end; padding-right: 20px; }
+        .s-btn { padding: 10px 20px; background: #333; color: #888; border: none; border-radius: 5px; cursor: not-allowed; }
+        .s-btn.active { background: #fff; color: #000; cursor: pointer; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<header><h1>X-WORLD Live</h1></header>
+<div id="vBox">লোডিং হচ্ছে...</div>
+
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, collection, doc, getDoc, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyBWhYvIKGHfDO4NrH0G5N692FljzD_wmZc",
@@ -13,91 +41,66 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
-    const videoList = document.getElementById('videoList');
+    const vBox = document.getElementById('vBox');
 
-    // ১. ইউআরএল থেকে আইডি চেক করা
-    const urlParams = new URLSearchParams(window.location.search);
-    const videoId = urlParams.get('id');
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('id');
 
-    if (videoId) {
-        // ২. যদি আইডি থাকে, শুধু সেই ভিডিওটি ফায়ারবেস থেকে আনা
-        const docRef = doc(db, "userVideos", videoId);
-        getDoc(docRef).then((docSnap) => {
-            if (docSnap.exists()) {
-                const data = docSnap.data();
-                renderVideoCard(data);
-            } else {
-                videoList.innerHTML = "<h2 style='text-align:center; color:gray;'>ভিডিওটি খুঁজে পাওয়া যায়নি!</h2>";
-            }
-        }).catch((error) => {
-            console.error("Error getting document:", error);
-        });
-    } else {
-        // ৩. যদি আইডি না থাকে, তবে খালি পেজ দেখাবে বা মেসেজ দেবে
-        videoList.innerHTML = "<h2 style='text-align:center; color:gray;'>অনুগ্রহ করে সঠিক লিংকে ক্লিক করুন।</h2>";
-    }
-
-    // ভিডিও কার্ড রেন্ডার করার ফাংশন
-    function renderVideoCard(data) {
-        const card = document.createElement('div');
-        card.className = 'video-card';
-        card.innerHTML = `
-            <div style="position:relative;">
-                <video preload="metadata" playsinline>
-                    <source src="${data.url}#t=0.5" type="video/mp4">
-                </video>
-                
-                <div class="thumb-overlay">
-                    <div class="play-btn">▶</div>
-                </div>
-
-                <div class="ad-container">
-                    <iframe src="${data.adLink}"></iframe>
-                    <div class="skip-section">
-                        <span class="timer-text">Wait <span class="sec">5</span>s</span>
-                        <button class="skip-btn">Skip Ad</button>
-                    </div>
-                </div>
-            </div>
-            <div class="title">${data.title}</div>
-        `;
-        videoList.appendChild(card);
-
-        // আপনার আগের প্লে এবং স্কিপ লজিক এখানে থাকবে
-        setupVideoLogic(card);
-    }
-
-    function setupVideoLogic(card) {
-        const video = card.querySelector('video');
-        const thumbOverlay = card.querySelector('.thumb-overlay');
-        const adContainer = card.querySelector('.ad-container');
-        const skipBtn = card.querySelector('.skip-btn');
-        const secSpan = card.querySelector('.sec');
-        const timerText = card.querySelector('.timer-text');
-
-        thumbOverlay.onclick = function() {
-            thumbOverlay.style.display = 'none';
-            adContainer.style.display = 'flex';
-            
-            let count = 5;
-            const timer = setInterval(() => {
-                count--;
-                secSpan.innerText = count;
-                if (count <= 0) {
-                    clearInterval(timer);
-                    timerText.style.display = 'none';
-                    skipBtn.innerText = "Skip Ad ❯";
-                    skipBtn.classList.add('active');
+    if (id) {
+        async function load() {
+            try {
+                const s = await getDoc(doc(db, "userVideos", id));
+                if (s.exists()) {
+                    const d = s.data();
+                    vBox.innerHTML = `
+                        <div class="v-card">
+                            <div style="position:relative;">
+                                <video id="vid" playsinline><source src="${d.url}"></video>
+                                <div class="overlay" id="ovl"><div class="play">▶</div></div>
+                                <div class="ad-layer" id="adl">
+                                    <iframe src="${d.adLink}"></iframe>
+                                    <div class="skip-bar">
+                                        <span id="tmr" style="margin-right:10px;">Wait 5s</span>
+                                        <button class="s-btn" id="skp">Skip Ad</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="title">${d.title}</div>
+                        </div>`;
                     
-                    skipBtn.onclick = (e) => {
-                        e.stopPropagation();
-                        adContainer.remove();
-                        video.controls = true;
-                        video.play();
+                    const ovl = document.getElementById('ovl');
+                    const adl = document.getElementById('adl');
+                    const skp = document.getElementById('skp');
+                    const vid = document.getElementById('vid');
+                    const tmr = document.getElementById('tmr');
+
+                    ovl.onclick = () => {
+                        ovl.style.display = 'none';
+                        adl.style.display = 'flex';
+                        let time = 5;
+                        const interval = setInterval(() => {
+                            time--;
+                            tmr.innerText = "Wait " + time + "s";
+                            if(time <= 0) {
+                                clearInterval(interval);
+                                tmr.style.display = 'none';
+                                skp.innerText = "Skip Ad ❯";
+                                skp.classList.add('active');
+                                skp.onclick = () => {
+                                    adl.remove();
+                                    vid.controls = true;
+                                    vid.play();
+                                };
+                            }
+                        }, 1000);
                     };
-                }
-            }, 1000);
-        };
+                } else { vBox.innerHTML = "ভিডিওটি খুঁজে পাওয়া যায়নি!"; }
+            } catch (e) { vBox.innerHTML = "Error: " + e.message; }
+        }
+        load();
+    } else {
+        vBox.innerHTML = "সঠিক লিঙ্কে ক্লিক করুন।";
     }
-                                             </script>
-                                             
+</script>
+</body>
+</html>
