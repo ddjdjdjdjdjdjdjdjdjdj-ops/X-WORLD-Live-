@@ -8,53 +8,32 @@
         body { background: #000; color: #fff; font-family: sans-serif; margin: 0; padding: 0; overflow-x: hidden; }
         #main-content { display: flex; flex-direction: column; align-items: center; padding: 10px; }
         header { text-align: center; padding: 20px; width: 100%; border-bottom: 1px solid #333; }
-        h1 { color: red; margin: 0; }
+        h1 { color: red; margin: 0; text-transform: uppercase; letter-spacing: 2px; }
         
-        .v-card { width: 100%; max-width: 500px; margin-top: 20px; background: #111; border-radius: 10px; overflow: hidden; border: 1px solid #333; position: relative; }
+        .v-card { width: 100%; max-width: 500px; margin-top: 20px; background: #111; border-radius: 12px; overflow: hidden; border: 1px solid #333; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         video { width: 100%; display: block; }
-        .title { padding: 15px; font-size: 18px; font-weight: bold; text-align: center; }
+        .title { padding: 15px; font-size: 18px; font-weight: bold; text-align: center; color: #eee; }
 
-        /* Full Screen Ad Overlay */
-        #ad-screen {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; z-index: 9999; display: none; flex-direction: column;
-        }
-        #ad-frame { width: 100%; height: 88%; border: none; background: #fff; }
-        
-        /* Bottom Skip Bar */
-        #skip-bar {
-            height: 12%; background: #111; display: flex; align-items: center; 
-            justify-content: space-between; padding: 0 20px; border-top: 1px solid #333;
-        }
-        .tmr-text { color: yellow; font-size: 15px; }
-        .s-btn { 
-            padding: 10px 20px; background: #333; color: #888; 
-            border: none; border-radius: 5px; cursor: not-allowed; font-weight: bold;
-        }
-        .s-btn.active { background: #fff; color: #000; cursor: pointer; }
-        
         /* Play Overlay */
         .play-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.6); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer;
-            z-index: 10;
+            background: rgba(0,0,0,0.7); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer;
+            z-index: 10; transition: 0.3s;
         }
-        .play-icon { width: 65px; height: 65px; background: red; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 25px; margin-bottom: 10px; }
+        .play-overlay:hover { background: rgba(0,0,0,0.5); }
+        .play-icon { 
+            width: 70px; height: 70px; background: red; border-radius: 50%; 
+            display: flex; align-items: center; justify-content: center; 
+            font-size: 30px; color: white;
+            box-shadow: 0 0 25px rgba(255,0,0,0.7);
+        }
     </style>
 </head>
 <body>
 
-<div id="ad-screen">
-    <iframe id="ad-frame" src=""></iframe>
-    <div id="skip-bar">
-        <div id="tmr-txt" class="tmr-text">Wait 8s...</div>
-        <button id="skp-btn" class="s-btn">Skip Ad</button>
-    </div>
-</div>
-
 <div id="main-content">
     <header><h1>X-WORLD Live</h1></header>
-    <div id="vBox">Loading...</div>
+    <div id="vBox" style="margin-top: 50px;">ভিডিও লোড হচ্ছে...</div>
 </div>
 
 <script type="module">
@@ -86,52 +65,34 @@
                     vBox.innerHTML = `
                         <div class="v-card">
                             <div style="position:relative;">
-                                <video id="main-vid" playsinline src="${d.url}"></video>
+                                <video id="main-vid" playsinline src="${d.url}" controls></video>
                                 <div class="play-overlay" id="start-play">
                                     <div class="play-icon">▶</div>
-                                    <small>ভিডিও দেখতে ক্লিক করুন</small>
                                 </div>
                             </div>
                             <div class="title">${d.title}</div>
                         </div>`;
                     
                     const startPlay = document.getElementById('start-play');
-                    const adScreen = document.getElementById('ad-screen');
-                    const adFrame = document.getElementById('ad-frame');
-                    const tmrTxt = document.getElementById('tmr-txt');
-                    const skpBtn = document.getElementById('skp-btn');
                     const mainVid = document.getElementById('main-vid');
 
                     startPlay.onclick = () => {
-                        adFrame.src = d.adLink;
-                        adScreen.style.display = 'flex';
-                        
-                        // Timer 8 second set kora hoyeche
-                        let timeLeft = 8;
-                        const countdown = setInterval(() => {
-                            timeLeft--;
-                            tmrTxt.innerText = "Wait " + timeLeft + "s...";
-                            
-                            if(timeLeft <= 0) {
-                                clearInterval(countdown);
-                                tmrTxt.style.visibility = 'hidden';
-                                skpBtn.innerText = "Skip Ad ❯";
-                                skpBtn.classList.add('active');
-                                
-                                skpBtn.onclick = () => {
-                                    adScreen.style.display = 'none'; // Ad screen hide kora
-                                    startPlay.style.display = 'none'; // Video-r upore thaka Red Play button overlay sorano
-                                    mainVid.controls = true;
-                                    mainVid.play();
-                                };
-                            }
-                        }, 1000);
+                        if(d.adLink) {
+                            window.open(d.adLink, '_blank');
+                        }
+                        startPlay.style.display = 'none';
+                        mainVid.play().catch(e => console.log("Play failed"));
                     };
+                } else {
+                    vBox.innerHTML = "ভিডিও পাওয়া যায়নি!";
                 }
-            } catch (e) { vBox.innerHTML = "Error: " + e.message; }
+            } catch (err) {
+                vBox.innerHTML = "লোডিং এরর!";
+            }
         }
         load();
     }
 </script>
+
 </body>
 </html>
