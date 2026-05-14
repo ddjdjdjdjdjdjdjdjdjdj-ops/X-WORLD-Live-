@@ -5,8 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>X-WORLD Live</title>
     
-    <meta name="3c0117d1ae0ba7707e1a1c6c4086fe41430264b4" content="3c0117d1ae0ba7707e1a1c6c4086fe41430264b4" />
+    <!-- HilltopAds Verification -->
+    <meta name="hilltopads-site-verification" content="3c0117d1ae0ba7707e1a1c6c4086fe41430264b4" />
 
+    <!-- Fluid Player CSS and JS -->
     <link rel="stylesheet" href="https://cdn.fluidplayer.com/v3/current/fluidplayer.min.css" type="text/css"/>
     <script src="https://cdn.fluidplayer.com/v3/current/fluidplayer.min.js"></script>
 
@@ -17,6 +19,7 @@
         h1 { color: red; margin: 0; text-transform: uppercase; letter-spacing: 2px; }
         .v-card { width: 100%; max-width: 500px; margin-top: 20px; background: #111; border-radius: 12px; overflow: hidden; border: 1px solid #333; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         .title { padding: 15px; font-size: 18px; font-weight: bold; text-align: center; color: #eee; }
+        #video-player { width: 100%; height: auto; }
     </style>
 </head>
 <body>
@@ -60,18 +63,24 @@
                             <div class="title">${d.title}</div>
                         </div>`;
                     
-                    // Fluid Player Setup with HilltopAds VAST
+                    // ইউটিউবের মতো অ্যাড সেটআপ
                     fluidPlayer('video-player', {
                         layoutControls: {
                             fillControlBar: true,
-                            autoPlay: false,
-                            mute: false
+                            autoPlay: true,
+                            mute: true,
+                            allowTheatre: true
                         },
                         vastOptions: {
+                            skipButtonCaption: 'Skip Ad in [seconds]s', // স্কিপ বাটনের লেখা
+                            skipButtonClickCaption: 'Skip Ad',          // ৫ সেকেন্ড পর যা দেখাবে
+                            adClickable: true,
+                            adText: 'Advertisement',
                             adList: [
                                 {
-                                    roll: 'preRoll', // ভিডিওর শুরুতে অ্যাড আসবে
-                                    vastTag: 'এখানে_আপনার_HilltopAds_এর_VAST_লিঙ্কটি_বসাবেন'
+                                    roll: 'preRoll',
+                                    vastTag: 'YOUR_HILLTOPADS_VAST_TAG_HERE', // এখানে আপনার অ্যাড লিঙ্ক দিন
+                                    timer: 5 // ৫ সেকেন্ড পর স্কিপ করার অপশন আসবে
                                 }
                             ]
                         }
