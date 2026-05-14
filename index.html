@@ -4,29 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>X-WORLD Live</title>
+    
+    <meta name="3c0117d1ae0ba7707e1a1c6c4086fe41430264b4" content="3c0117d1ae0ba7707e1a1c6c4086fe41430264b4" />
+
+    <link rel="stylesheet" href="https://cdn.fluidplayer.com/v3/current/fluidplayer.min.css" type="text/css"/>
+    <script src="https://cdn.fluidplayer.com/v3/current/fluidplayer.min.js"></script>
+
     <style>
         body { background: #000; color: #fff; font-family: sans-serif; margin: 0; padding: 0; overflow-x: hidden; }
         #main-content { display: flex; flex-direction: column; align-items: center; padding: 10px; }
         header { text-align: center; padding: 20px; width: 100%; border-bottom: 1px solid #333; }
         h1 { color: red; margin: 0; text-transform: uppercase; letter-spacing: 2px; }
-        
         .v-card { width: 100%; max-width: 500px; margin-top: 20px; background: #111; border-radius: 12px; overflow: hidden; border: 1px solid #333; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        video { width: 100%; display: block; }
         .title { padding: 15px; font-size: 18px; font-weight: bold; text-align: center; color: #eee; }
-
-        /* Play Overlay */
-        .play-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.7); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer;
-            z-index: 10; transition: 0.3s;
-        }
-        .play-overlay:hover { background: rgba(0,0,0,0.5); }
-        .play-icon { 
-            width: 70px; height: 70px; background: red; border-radius: 50%; 
-            display: flex; align-items: center; justify-content: center; 
-            font-size: 30px; color: white;
-            box-shadow: 0 0 25px rgba(255,0,0,0.7);
-        }
     </style>
 </head>
 <body>
@@ -64,25 +54,29 @@
                     const d = s.data();
                     vBox.innerHTML = `
                         <div class="v-card">
-                            <div style="position:relative;">
-                                <video id="main-vid" playsinline src="${d.url}" controls></video>
-                                <div class="play-overlay" id="start-play">
-                                    <div class="play-icon">▶</div>
-                                </div>
-                            </div>
+                            <video id="video-player">
+                                <source src="${d.url}" type="video/mp4" />
+                            </video>
                             <div class="title">${d.title}</div>
                         </div>`;
                     
-                    const startPlay = document.getElementById('start-play');
-                    const mainVid = document.getElementById('main-vid');
-
-                    startPlay.onclick = () => {
-                        if(d.adLink) {
-                            window.open(d.adLink, '_blank');
+                    // Fluid Player Setup with HilltopAds VAST
+                    fluidPlayer('video-player', {
+                        layoutControls: {
+                            fillControlBar: true,
+                            autoPlay: false,
+                            mute: false
+                        },
+                        vastOptions: {
+                            adList: [
+                                {
+                                    roll: 'preRoll', // ভিডিওর শুরুতে অ্যাড আসবে
+                                    vastTag: 'এখানে_আপনার_HilltopAds_এর_VAST_লিঙ্কটি_বসাবেন'
+                                }
+                            ]
                         }
-                        startPlay.style.display = 'none';
-                        mainVid.play().catch(e => console.log("Play failed"));
-                    };
+                    });
+
                 } else {
                     vBox.innerHTML = "ভিডিও পাওয়া যায়নি!";
                 }
