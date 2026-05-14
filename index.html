@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>X-WORLD Live</title>
     
-    <!-- HilltopAds Verification -->
+    <!-- HilltopAds এর জন্য একদম সঠিক মেটা ট্যাগ -->
     <meta name="hilltopads-site-verification" content="3c0117d1ae0ba7707e1a1c6c4086fe41430264b4" />
 
     <!-- Fluid Player CSS and JS -->
@@ -63,7 +63,6 @@
                             <div class="title">${d.title}</div>
                         </div>`;
                     
-                    // ইউটিউবের মতো অ্যাড সেটআপ
                     fluidPlayer('video-player', {
                         layoutControls: {
                             fillControlBar: true,
@@ -72,15 +71,15 @@
                             allowTheatre: true
                         },
                         vastOptions: {
-                            skipButtonCaption: 'Skip Ad in [seconds]s', // স্কিপ বাটনের লেখা
-                            skipButtonClickCaption: 'Skip Ad',          // ৫ সেকেন্ড পর যা দেখাবে
+                            skipButtonCaption: 'Skip Ad in [seconds]s',
+                            skipButtonClickCaption: 'Skip Ad',
                             adClickable: true,
                             adText: 'Advertisement',
                             adList: [
                                 {
                                     roll: 'preRoll',
-                                    vastTag: 'YOUR_HILLTOPADS_VAST_TAG_HERE', // এখানে আপনার অ্যাড লিঙ্ক দিন
-                                    timer: 5 // ৫ সেকেন্ড পর স্কিপ করার অপশন আসবে
+                                    vastTag: 'YOUR_HILLTOPADS_VAST_TAG_HERE', 
+                                    timer: 5 
                                 }
                             ]
                         }
