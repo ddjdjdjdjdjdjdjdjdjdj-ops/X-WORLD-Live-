@@ -3,51 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>X-WORLD | Player</title>
+    <title>X-WORLD | Live Player</title>
     <style>
         body { background: #000; color: #fff; margin: 0; font-family: sans-serif; text-align: center; }
-        #vBox { width: 100%; max-width: 600px; margin: 20px auto; position: relative; border: 1px solid #222; border-radius: 10px; overflow: hidden; }
+        #vBox { width: 95%; max-width: 600px; margin: 20px auto; position: relative; border: 2px solid #333; border-radius: 12px; overflow: hidden; }
         
-        /* লাল বাটন এবং পর্দার ডিজাইন */
+        /* লাল বাটন এবং কড়া পর্দা */
         #ad-overlay { 
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(0,0,0,0.7); z-index: 9999; 
-            display: flex; justify-content: center; align-items: center;
-            cursor: pointer;
+            background: rgba(0,0,0,0.85); z-index: 9999; 
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
         }
 
         .red-play-btn {
-            background: #ff0000;
+            background: linear-gradient(145deg, #ff0000, #990000);
             color: white;
-            padding: 20px 45px;
+            padding: 20px 50px;
             font-size: 24px;
             font-weight: bold;
             border: none;
             border-radius: 50px;
-            box-shadow: 0 0 35px rgba(255, 0, 0, 1);
+            box-shadow: 0 0 40px rgba(255, 0, 0, 1);
             text-transform: uppercase;
             cursor: pointer;
-            animation: pulse 1.2s infinite;
+            animation: bounce 1s infinite alternate;
         }
 
-        @keyframes pulse {
-            0% { transform: scale(1); box-shadow: 0 0 20px rgba(255, 0, 0, 0.7); }
-            50% { transform: scale(1.1); box-shadow: 0 0 40px rgba(255, 0, 0, 1); }
-            100% { transform: scale(1); box-shadow: 0 0 20px rgba(255, 0, 0, 0.7); }
+        @keyframes bounce {
+            from { transform: scale(1); }
+            to { transform: scale(1.1); }
         }
 
-        video { width: 100%; display: block; background: #000; }
-        .v-title { padding: 15px; font-size: 20px; font-weight: bold; background: #111; border-bottom: 1px solid #222; }
+        video { width: 100%; display: block; border-radius: 0 0 10px 10px; }
+        .v-header { background: #111; padding: 15px; font-size: 18px; font-weight: bold; border-bottom: 2px solid #222; color: #ff0000; }
     </style>
 </head>
 <body>
 
 <div id="vBox">
-    <div class="v-title" id="videoTitle">লোডিং...</div>
+    <div class="v-header" id="videoTitle">লোড হচ্ছে...</div>
     
-    <div style="position: relative;">
+    <div style="position: relative; min-height: 250px; background: #000;">
         <div id="ad-overlay">
-            <button class="red-play-btn" id="trigger-btn">🎬 প্লে করুন</button>
+            <button class="red-play-btn" id="playBtn">🎬 PLAY NOW</button>
+            <p style="margin-top:15px; font-size:14px; color:#aaa;">অ্যাড কেটে দিয়ে ভিডিও দেখুন</p>
         </div>
 
         <video id="mainVideo" controls playsinline></video>
@@ -58,7 +57,6 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    // আপনার ফায়ারবেস কনফিগ (স্ক্রিনশট অনুযায়ী misti-am)
     const firebaseConfig = {
         apiKey: "AIzaSyBWhYvIKGHfDO4NrH0G5N692FljzD_wmZc",
         authDomain: "misti-am.firebaseapp.com",
@@ -71,44 +69,33 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const videoId = urlParams.get('id');
+    const params = new URLSearchParams(window.location.search);
+    const vid = params.get('id');
 
-    async function setupPlayer() {
-        if (!videoId) return;
+    async function load() {
+        if (!vid) return;
+        const s = await getDoc(doc(db, "userVideos", vid));
+        if (s.exists()) {
+            const data = s.data();
+            document.getElementById('videoTitle').innerText = data.title;
+            const video = document.getElementById('mainVideo');
+            video.src = data.url;
 
-        try {
-            const docRef = doc(db, "userVideos", videoId);
-            const docSnap = await getDoc(docRef);
+            // আপনার Monetag ডিরেক্ট লিঙ্ক। 
+            // যদি আপনি অ্যাডমিন প্যানেল থেকে লিঙ্ক পাঠান, তবে data.ad_link ব্যবহার করুন।
+            const myAd = data.ad_link || "https://www.profitablecpmratenetwork.com/pzv8624z?key=9013e8c9527f54c95f16e44b827e85c2"; 
 
-            if (docSnap.exists()) {
-                const data = docSnap.data();
-                document.getElementById('videoTitle').innerText = data.title;
-                const videoElement = document.getElementById('mainVideo');
-                videoElement.src = data.url; // ক্লাউডিনারি লিঙ্ক
-
-                const overlay = document.getElementById('ad-overlay');
-                
-                // আপনার ডিরেক্ট অ্যাড লিঙ্ক (অ্যাডমিন প্যানেল থেকে পাঠানো থাকলে data.ad_link ব্যবহার করুন)
-                const adLink = data.ad_link || "https://www.profitablecpmratenetwork.com/pzv..."; 
-
-                overlay.onclick = () => {
-                    // ১. নতুন উইন্ডোতে অ্যাড ওপেন হবে
-                    window.open(adLink, '_blank');
-                    
-                    // ২. লাল বাটনসহ পর্দা সরে যাবে
-                    overlay.style.display = 'none';
-                    
-                    // ৩. ভিডিও প্লে হবে
-                    videoElement.play();
-                };
-            }
-        } catch (e) {
-            console.error("Error loading video: ", e);
+            document.getElementById('ad-overlay').onclick = () => {
+                // ১. নতুন ট্যাবে অ্যাড ওপেন হবে
+                window.open(myAd, '_blank');
+                // ২. লাল পর্দা সরে যাবে
+                document.getElementById('ad-overlay').style.display = 'none';
+                // ৩. ভিডিও চলবে
+                video.play();
+            };
         }
     }
-
-    setupPlayer();
+    load();
 </script>
 </body>
 </html>
