@@ -3,9 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    <meta name="6a97888e-site-verification" content="857420cd1419e7706adc3ef6cfdd3851">
-    
     <title>X-WORLD Live</title>
     
     <link rel="stylesheet" href="https://cdn.fluidplayer.com/v3/current/fluidplayer.min.css" type="text/css"/>
@@ -18,7 +15,7 @@
         h1 { color: red; margin: 0; text-transform: uppercase; letter-spacing: 2px; }
         .v-card { width: 100%; max-width: 500px; margin-top: 20px; background: #111; border-radius: 12px; overflow: hidden; border: 1px solid #333; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         .title { padding: 15px; font-size: 18px; font-weight: bold; text-align: center; color: #eee; }
-        #video-player { width: 100%; height: auto; }
+        #video-player { width: 100%; height: auto; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -48,6 +45,9 @@
     const params = new URLSearchParams(window.location.search);
     const id = params.get('id');
 
+    // Monetag Direct Link এখানে বসান
+    const monetagDirectLink = 'YOUR_MONETAG_DIRECT_LINK_HERE';
+
     if (id) {
         async function load() {
             try {
@@ -55,34 +55,26 @@
                 if (s.exists()) {
                     const d = s.data();
                     vBox.innerHTML = `
-                        <div class="v-card">
+                        <div class="v-card" id="ad-trigger">
                             <video id="video-player">
                                 <source src="${d.url}" type="video/mp4" />
                             </video>
                             <div class="title">${d.title}</div>
                         </div>`;
                     
-                    fluidPlayer('video-player', {
+                    const player = fluidPlayer('video-player', {
                         layoutControls: {
                             fillControlBar: true,
-                            autoPlay: true,
-                            mute: true,
+                            autoPlay: false,
+                            mute: false,
                             allowTheatre: true
-                        },
-                        vastOptions: {
-                            skipButtonCaption: 'Skip Ad in [seconds]s',
-                            skipButtonClickCaption: 'Skip Ad',
-                            adClickable: true,
-                            adText: 'Advertisement',
-                            adList: [
-                                {
-                                    roll: 'preRoll',
-                                    vastTag: 'YOUR_EXOCLICK_VAST_TAG_HERE', 
-                                    timer: 5 
-                                }
-                            ]
                         }
                     });
+
+                    // ভিডিওতে ক্লিক করলে নতুন ট্যাবে অ্যাড ওপেন হবে
+                    document.getElementById('ad-trigger').addEventListener('click', function() {
+                        window.open(monetagDirectLink, '_blank');
+                    }, { once: true }); // একবার ক্লিক করলে অ্যাড খুলবে, তারপর ভিডিও চলবে
 
                 } else {
                     vBox.innerHTML = "ভিডিও পাওয়া যায়নি!";
